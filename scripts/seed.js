@@ -8,9 +8,8 @@ const fs = require('fs');
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error('ERROR: MONGODB_URI environment variable is not defined!');
-  console.log('Make sure you have a .env file in your project root with MONGODB_URI defined.');
-  console.log('Example: MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database');
+  
+  
   process.exit(1);
 }
 
