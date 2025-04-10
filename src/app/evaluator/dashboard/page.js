@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-export default function StudentPortal() {
+export default function EvaluatorPortal() {
   // State for team data and UI control
   const [teamId, setTeamId] = useState('');
   const [members, setMembers] = useState([]);
@@ -12,7 +12,10 @@ export default function StudentPortal() {
   const [submittedTeam, setSubmittedTeam] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
+  
+  // Simplified marks state
+  const [marks, setMarks] = useState(0);
+  const [feedback, setFeedback] = useState('');
 
   const loadProblemStatements = async () => {
     try {
@@ -27,14 +30,12 @@ export default function StudentPortal() {
     }
   };
 
-
   const loadTeamData = async () => {
     if (!teamId.trim()) {
       setErrorMessage("Please enter a Team ID");
       return;
     }
     
-
     setIsLoading(true);
     
     try {
@@ -43,70 +44,91 @@ export default function StudentPortal() {
       
       setErrorMessage('');
       
-      if (data.submitted) {
-        setSubmittedTeam(true);
-        return;
-      }
-  
-      if (data && data.members) {
-        setMembers(data.members);
+      if (data && data.teamId) {
+        setMembers(data.members || []);
         setProblemStatement(data.problemStatement || '');
+        setSubmittedTeam(data.submitted || false);
         setTeamLoaded(true);
         
-
+        // Reset evaluation marks whenever a new team is loaded
+        setMarks(0);
+        setFeedback('');
+        
         loadProblemStatements();
       } else {
-        setMembers([]);
-        setProblemStatement('');
-        setTeamLoaded(true);
-        
-
-        loadProblemStatements();
+        setErrorMessage("Team not found");
+        setTeamLoaded(false);
       }
     } catch (err) {
       console.error("Failed to load team data", err);
       setErrorMessage("Failed to load team data");
     } finally {
-
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    const teamData = {
-      teamId,
-      members,
-      problemStatement,
-      submitted: true
-    };
-  
+  const revertLock = async () => {
     try {
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(teamData),
+        body: JSON.stringify({
+          teamId,
+          members,
+          problemStatement,
+          submitted: false
+        }),
       });
   
       const result = await res.json();
-      alert(result.message || "Submitted successfully!");
-      
+      if (result.message) {
+        alert("Team lock reverted successfully!");
+        setSubmittedTeam(false);
+      }
+    } catch (err) {
+      console.error("Failed to revert lock:", err);
+      alert("Failed to revert team lock.");
+    }
+  };
 
+  const submitEvaluation = async () => {
+    const evaluationData = {
+      teamId,
+      marks,
+      feedback,
+      evaluatedAt: new Date().toISOString()
+    };
+    
+    try {
+      // Note: This endpoint doesn't exist yet - it will go to new database
+      const res = await fetch('/api/evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(evaluationData),
+      });
+      
+      // For now, just show a success message
+      alert("Evaluation submitted successfully!");
+      
+      // Reset form
       setTeamId('');
       setMembers([]);
       setNewMember({ name: '', email: '' });
       setProblemStatement('');
       setTeamLoaded(false);
       setProblemStatements([]);
+      setMarks(0);
+      setFeedback('');
+      
     } catch (err) {
-      console.error("Submission failed:", err);
-      alert("Failed to submit team data.");
+      console.error("Evaluation submission failed:", err);
+      alert("Failed to submit evaluation.");
     }
   };
-
 
   const addMember = () => {
     if (newMember.name && newMember.email) {
@@ -119,17 +141,13 @@ export default function StudentPortal() {
     setMembers(members.filter((_, i) => i !== index));
   };
   
-
-  const hasPresentMembers = members.some(member => member.present);
-
   const hasMaxMembers = members.length >= 4;
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center text-white-800">AlgoNet Hackathon - Student Portal</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center text-white-800">AlgoNet Hackathon - Evaluators Portal</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
-
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-2">
             Team ID
@@ -140,15 +158,15 @@ export default function StudentPortal() {
               value={teamId}
               onChange={(e) => setTeamId(e.target.value)}
               className="flex-1 p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your Team ID"
+              placeholder="Enter Team ID"
               required
-              disabled={teamLoaded || isLoading}
+              disabled={isLoading}
             />
             <button
               type="button"
               onClick={loadTeamData}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
-              disabled={teamLoaded || isLoading}
+              disabled={isLoading}
             >
               {isLoading ? (
                 <>
@@ -166,25 +184,18 @@ export default function StudentPortal() {
           {errorMessage && <p className="text-red-500 mt-1">{errorMessage}</p>}
         </div>
 
-        {submittedTeam && (
-          <div className="p-4 mb-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded">
-            <p className="font-medium">This team has already submitted their registration.</p>
-            <p>Please contact an administrator if you need to make changes.</p>
-            <button
-              className="mt-3 bg-blue-600 text-white px-3 py-1 rounded text-sm"
-              onClick={() => {
-                setTeamId('');
-                setSubmittedTeam(false);
-                setTeamLoaded(false);
-              }}
-            >
-              Enter Different Team ID
-            </button>
-          </div>
-        )}
-
-        {teamLoaded && !submittedTeam && (
+        {teamLoaded && (
           <>
+            {submittedTeam && (
+              <div className="mb-4 flex justify-end">
+                <button
+                  className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
+                  onClick={revertLock}
+                >
+                  Revert Lock
+                </button>
+              </div>
+            )}
 
             <div className="mb-6">
               <label className="block text-gray-700 font-medium mb-2">
@@ -204,7 +215,6 @@ export default function StudentPortal() {
                 ))}
               </select>
             </div>
-
 
             <div className="mb-6">
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Team Members</h2>
@@ -241,7 +251,6 @@ export default function StudentPortal() {
                 <p className="text-gray-500 italic">No team members found</p>
               )}
 
-              
               {!hasMaxMembers && (
                 <div className="mt-4 p-4 bg-gray-50 rounded">
                   <h3 className="font-medium mb-2 text-gray-800">Add New Member</h3>
@@ -272,7 +281,6 @@ export default function StudentPortal() {
                 </div>
               )}
               
-
               {hasMaxMembers && (
                 <div className="mt-4 p-3 bg-blue-50 rounded text-blue-800 border border-blue-200">
                   <p className="font-medium">Maximum team size reached (4 members)</p>
@@ -280,15 +288,52 @@ export default function StudentPortal() {
                 </div>
               )}
             </div>
+            
+            {/* Simplified Evaluation Section */}
+            <div className="mt-8 mb-6 border-t pt-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">Team Evaluation</h2>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Marks (0-100)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={marks}
+                  onChange={(e) => setMarks(parseInt(e.target.value) || 0)}
+                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="w-full bg-gray-200 rounded-full h-4 mt-2">
+                  <div 
+                    className="bg-blue-600 h-4 rounded-full" 
+                    style={{ width: `${marks}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Feedback & Comments
+                </label>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="4"
+                  placeholder="Provide feedback for the team..."
+                ></textarea>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button
-                type="submit"
-                onClick={handleSubmit}
-                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
-                disabled={!teamId || members.length === 0 || !problemStatement || !hasPresentMembers}
+                type="button"
+                onClick={submitEvaluation}
+                className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
               >
-                Submit Team Registration
+                Submit Evaluation
               </button>
               
               <button
@@ -301,18 +346,14 @@ export default function StudentPortal() {
                   setTeamLoaded(false);
                   setProblemStatements([]);
                   setErrorMessage('');
+                  setMarks(0);
+                  setFeedback('');
                 }}
                 className="bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                Close
               </button>
             </div>
-            
-            {members.length > 0 && !hasPresentMembers && (
-              <p className="mt-2 text-red-500 text-sm">
-                At least one team member must be marked as present to submit.
-              </p>
-            )}
           </>
         )}
       </div>

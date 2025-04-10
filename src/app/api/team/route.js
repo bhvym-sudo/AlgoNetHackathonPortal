@@ -18,7 +18,7 @@ export async function POST(request) {
   if (existing) {
     existing.members = body.members;
     existing.problemStatement = body.problemStatement;
-    existing.submitted = body.submitted || false;
+    existing.submitted = body.submitted;
     await existing.save();
     return Response.json({ message: "Team updated successfully" });
   } else {
