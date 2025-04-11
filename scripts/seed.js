@@ -1,10 +1,10 @@
-// scripts/seed.js
+
 require('dotenv').config({ path: './.env' });
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 
-// Check if MONGODB_URI is defined
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
@@ -15,7 +15,7 @@ if (!MONGODB_URI) {
 
 console.log('Attempting to connect to MongoDB...');
 
-// Connect to MongoDB
+
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -27,7 +27,7 @@ mongoose.connect(MONGODB_URI, {
   process.exit(1);
 });
 
-// Define schemas
+
 const ProblemSchema = new mongoose.Schema({
   title: String,
   description: String,
@@ -47,11 +47,11 @@ const TeamSchema = new mongoose.Schema({
   submitted: { type: Boolean, default: false }
 });
 
-// Create models
+
 const Problem = mongoose.models.Problem || mongoose.model('Problem', ProblemSchema);
 const Team = mongoose.models.Team || mongoose.model('Team', TeamSchema);
 
-// Sample data
+
 const problemStatements = [
   {
     title: "AI for Social Good",
@@ -107,18 +107,18 @@ const sampleTeams = [
   }
 ];
 
-// Seed the database
+
 async function seedDatabase() {
   try {
-    // Clear existing data
+    
     await Problem.deleteMany({});
     console.log('Cleared existing problem statements');
     
-    // Add problem statements
+    
     await Problem.insertMany(problemStatements);
     console.log('Added problem statements');
     
-    // Only add sample teams if they don't exist
+    
     for (const team of sampleTeams) {
       const existingTeam = await Team.findOne({ teamId: team.teamId });
       if (!existingTeam) {
@@ -131,7 +131,7 @@ async function seedDatabase() {
     
     console.log('Database seeded successfully');
     
-    // Close the connection
+    
     mongoose.connection.close();
   } catch (error) {
     console.error('Error seeding database:', error);

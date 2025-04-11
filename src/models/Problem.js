@@ -1,4 +1,4 @@
-// models/Problem.js
+
 import mongoose from 'mongoose';
 
 const ProblemSchema = new mongoose.Schema({

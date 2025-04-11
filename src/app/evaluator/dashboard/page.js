@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 
 export default function EvaluatorPortal() {
-  // State for team data and UI control
+  
   const [teamId, setTeamId] = useState('');
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState({ name: '', email: '' });
@@ -15,7 +15,7 @@ export default function EvaluatorPortal() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Simplified marks state
+  
   const [marks, setMarks] = useState(0);
   const [feedback, setFeedback] = useState('');
 
@@ -54,7 +54,7 @@ export default function EvaluatorPortal() {
         setSubmittedTeam(data.submitted || false);
         setTeamLoaded(true);
         
-        // Reset evaluation marks whenever a new team is loaded
+        
         setMarks(0);
         setFeedback('');
         
@@ -106,7 +106,7 @@ export default function EvaluatorPortal() {
     };
     
     try {
-      // Note: This endpoint doesn't exist yet - it will go to new database
+      
       const res = await fetch('/api/evaluation', {
         method: 'POST',
         headers: {
@@ -115,10 +115,10 @@ export default function EvaluatorPortal() {
         body: JSON.stringify(evaluationData),
       });
       
-      // For now, just show a success message
+      
       alert("Evaluation submitted successfully!");
       
-      // Reset form
+      
       setTeamId('');
       setMembers([]);
       setNewMember({ name: '', email: '' });
@@ -172,6 +172,7 @@ export default function EvaluatorPortal() {
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
               disabled={isLoading}
             >
+            
               {isLoading ? (
                 <>
                   <span className="relative flex h-5 w-5">
@@ -186,7 +187,20 @@ export default function EvaluatorPortal() {
             </button>
           </div>
           {errorMessage && <p className="text-red-500 mt-1">{errorMessage}</p>}
+          
         </div>
+        <button
+              onClick={async () => {
+                await fetch('/api/evaluator/logout', {
+                  method: 'POST',
+                  credentials: 'include',
+                });
+                window.location.href = '/evaluator';
+              }}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+            >
+              Logout
+            </button>
 
         {teamLoaded && (
           <>
@@ -357,18 +371,7 @@ export default function EvaluatorPortal() {
               >
                 Close
               </button>
-              <button
-  onClick={async () => {
-    await fetch('/api/evaluator/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-    window.location.href = '/evaluator';
-  }}
-  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
->
-  Logout
-</button>
+              
             </div>
           </>
         )}

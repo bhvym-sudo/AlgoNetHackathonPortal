@@ -22,7 +22,7 @@ export default function EvaluatorLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation
+    
     if (!credentials.username || !credentials.password) {
       setError('Username and password are required');
       return;
@@ -43,10 +43,10 @@ export default function EvaluatorLogin() {
       const data = await response.json();
 
       if (response.ok) {
-        // Successful login - redirect to dashboard
+        
         router.push('/evaluator/dashboard');
       } else {
-        // Handle error response
+        
         setError(data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {

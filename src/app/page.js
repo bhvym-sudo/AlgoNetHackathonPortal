@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 export default function StudentPortal() {
-  // State for team data and UI control
+  
   const [teamId, setTeamId] = useState('');
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState({ name: '', email: '' });

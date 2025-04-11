@@ -1,4 +1,4 @@
-// app/api/problems/route.js
+
 import { connectToDB } from "@/lib/mongodb";
 import Problem from "@/models/Problem";
 
