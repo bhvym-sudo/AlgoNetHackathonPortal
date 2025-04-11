@@ -45,39 +45,6 @@
   100% { opacity: 0.6; }
 }
 
-/* Floating animations for tech elements */
-@keyframes float-right {
-  0% { transform: translateX(-100vw) translateY(0); opacity: 0; }
-  10% { opacity: 0.7; }
-  90% { opacity: 0.7; }
-  100% { transform: translateX(100vw) translateY(-20px); opacity: 0; }
-}
-
-@keyframes float-left {
-  0% { transform: translateX(100vw) translateY(0); opacity: 0; }
-  10% { opacity: 0.7; }
-  90% { opacity: 0.7; }
-  100% { transform: translateX(-100vw) translateY(-20px); opacity: 0; }
-}
-
-@keyframes float-up {
-  0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-  10% { opacity: 0.7; }
-  90% { opacity: 0.7; }
-  100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
-}
-
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 5px var(--accent-primary); }
-  50% { box-shadow: 0 0 20px var(--accent-primary), 0 0 30px var(--accent-secondary); }
-  100% { box-shadow: 0 0 5px var(--accent-primary); }
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -168,48 +135,12 @@ button, .button {
   cursor: pointer;
   transition: all var(--transition-speed);
   box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
 }
 
 button:hover, .button:hover {
   background-color: var(--accent-tertiary);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
-}
-
-/* Button ripple effect */
-button::after, .button::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.5);
-  opacity: 0;
-  border-radius: 100%;
-  transform: scale(1, 1) translate(-50%, -50%);
-  transform-origin: 50% 50%;
-}
-
-button:focus:not(:active)::after, .button:focus:not(:active)::after {
-  animation: ripple 1s ease-out;
-}
-
-@keyframes ripple {
-  0% {
-    opacity: 0.5;
-    transform: scale(0, 0);
-  }
-  20% {
-    transform: scale(25, 25);
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(40, 40);
-  }
 }
 
 code {
@@ -240,254 +171,15 @@ code {
   }
 }
 
-/* Floating tech elements */
-.tech-elements {
+/* Subtle parallax effect for a touch of depth */
+.parallax-grid {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   pointer-events: none;
   z-index: -1;
-}
-
-.tech-element {
-  position: absolute;
-  opacity: 0;
-  filter: blur(1px);
-}
-
-/* Binary code element */
-.binary {
-  font-family: monospace;
-  color: var(--accent-primary);
-  font-size: 1.2rem;
-  opacity: 0.3;
-}
-
-/* Circuit path element */
-.circuit {
-  width: 200px;
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  box-shadow: 0 0 8px var(--accent-primary);
-}
-
-/* Data node element */
-.data-node {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: var(--accent-secondary);
-  animation: pulse-glow 3s infinite ease-in-out;
-}
-
-/* Tech shape element */
-.tech-shape {
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--accent-tertiary);
-  border-radius: 10px;
-  animation: rotate 10s linear infinite;
-}
-
-/* Generate multiple elements with different speeds and delays */
-.binary:nth-child(1) { 
-  animation: float-right 20s linear infinite;
-  animation-delay: 0s;
-  top: 15%;
-}
-
-.binary:nth-child(2) { 
-  animation: float-left 25s linear infinite;
-  animation-delay: 5s;
-  top: 35%;
-}
-
-.binary:nth-child(3) { 
-  animation: float-right 30s linear infinite;
-  animation-delay: 12s;
-  top: 65%;
-}
-
-.circuit:nth-child(4) { 
-  animation: float-right 18s linear infinite;
-  animation-delay: 3s;
-  top: 25%;
-}
-
-.circuit:nth-child(5) { 
-  animation: float-left 22s linear infinite;
-  animation-delay: 7s;
-  top: 50%;
-}
-
-.circuit:nth-child(6) { 
-  animation: float-right 26s linear infinite;
-  animation-delay: 15s;
-  top: 80%;
-}
-
-.data-node:nth-child(7) { 
-  animation: float-up 15s linear infinite, pulse-glow 3s infinite;
-  animation-delay: 2s;
-  left: 20%;
-}
-
-.data-node:nth-child(8) { 
-  animation: float-up 12s linear infinite, pulse-glow 4s infinite;
-  animation-delay: 8s;
-  left: 40%;
-}
-
-.data-node:nth-child(9) { 
-  animation: float-up 20s linear infinite, pulse-glow 2s infinite;
-  animation-delay: 14s;
-  left: 70%;
-}
-
-.tech-shape:nth-child(10) { 
-  animation: float-right 28s linear infinite, rotate 10s linear infinite;
-  animation-delay: 4s;
-  top: 10%;
-}
-
-.tech-shape:nth-child(11) { 
-  animation: float-left 32s linear infinite, rotate 12s linear infinite reverse;
-  animation-delay: 10s;
-  top: 55%;
-}
-
-.tech-shape:nth-child(12) { 
-  animation: float-up 24s linear infinite, rotate 8s linear infinite;
-  animation-delay: 18s;
-  left: 85%;
-}
-
-/* Header with glitch effect */
-.glitch-header {
-  position: relative;
-  color: var(--accent-primary);
-  font-size: 3rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -2px;
-}
-
-.glitch-header::before,
-.glitch-header::after {
-  content: attr(data-text);
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.glitch-header::before {
-  left: 2px;
-  text-shadow: -1px 0 var(--accent-secondary);
-  animation: glitch-effect 3s infinite linear alternate-reverse;
-}
-
-.glitch-header::after {
-  left: -2px;
-  text-shadow: 1px 0 var(--accent-tertiary);
-  animation: glitch-effect 2s infinite linear alternate-reverse;
-}
-
-@keyframes glitch-effect {
-  0% {
-    clip-path: inset(80% 0 0 0);
-  }
-  20% {
-    clip-path: inset(0 0 30% 0);
-  }
-  40% {
-    clip-path: inset(50% 0 0 0);
-  }
-  60% {
-    clip-path: inset(0 80% 0 0);
-  }
-  80% {
-    clip-path: inset(0 0 70% 0);
-  }
-  100% {
-    clip-path: inset(0 0 0 70%);
-  }
-}
-
-/* Loading spinner with glow */
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 3px solid transparent;
-  border-top-color: var(--accent-primary);
-  border-right-color: var(--accent-secondary);
-  border-bottom-color: var(--accent-tertiary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Add this to your HTML */
-.tech-elements-html {
-  content: '<div class="tech-elements">';
-  content: '  <div class="tech-element binary">1010101010</div>';
-  content: '  <div class="tech-element binary">0101010101</div>';
-  content: '  <div class="tech-element binary">1100110011</div>';
-  content: '  <div class="tech-element circuit"></div>';
-  content: '  <div class="tech-element circuit"></div>';
-  content: '  <div class="tech-element circuit"></div>';
-  content: '  <div class="tech-element data-node"></div>';
-  content: '  <div class="tech-element data-node"></div>';
-  content: '  <div class="tech-element data-node"></div>';
-  content: '  <div class="tech-element tech-shape"></div>';
-  content: '  <div class="tech-element tech-shape"></div>';
-  content: '  <div class="tech-element tech-shape"></div>';
-  content: '</div>';
-}
-
-/* Matrix-style falling digital rain (add at end of page) */
-.matrix-rain {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -2;
-  opacity: 0.3;
-}
-
-.matrix-column {
-  position: absolute;
-  top: -100px;
-  font-family: monospace;
-  font-size: 1rem;
-  color: var(--accent-secondary);
-  text-shadow: 0 0 5px var(--accent-secondary);
-  animation: fall linear infinite;
-}
-
-
-
-@keyframes fall {
-  0% {
-    transform: translateY(-100%);
-    opacity: 1;
-  }
-  85% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(100vh);
-    opacity: 0;
-  }
+  opacity: 0.4;
+  animation: pulse 8s infinite ease-in-out;
 }
