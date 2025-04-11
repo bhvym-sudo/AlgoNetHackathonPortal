@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --grid-size: 40px;
+  --grid-color: rgba(0, 255, 0, 0.1);
 }
 
 @theme inline {
@@ -21,6 +23,12 @@
 
 body {
   background: var(--background);
+  background-image: 
+    linear-gradient(var(--grid-color) 6px, transparent 0px),
+    linear-gradient(90deg, var(--grid-color) 6px, transparent 0px);
+  background-size: var(--grid-size) var(--grid-size);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
