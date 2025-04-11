@@ -1,22 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  /* Base colors with more vibrant tech palette */
-  --background: #f5f7fa;
-  --foreground: #1a202c;
-  --accent-primary: #3498db;
-  --accent-secondary: #2ecc71;
-  --accent-tertiary: #9b59b6;
+  --background: #ffffff;
+  --foreground: #171717;
   --grid-size: 40px;
-  --grid-color: rgba(52, 152, 219, 0.08);
-  --grid-highlight: rgba(46, 204, 113, 0.12);
-  
-  /* Animation speeds */
-  --transition-speed: 0.3s;
-  
-  /* Shadow variables */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+  --grid-color: rgba(0, 255, 0, 0.1);
 }
 
 @theme inline {
@@ -28,158 +16,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111827;
-    --foreground: #f1f5f9;
-    --accent-primary: #60a5fa;
-    --accent-secondary: #4ade80;
-    --accent-tertiary: #c084fc;
-    --grid-color: rgba(96, 165, 250, 0.08);
-    --grid-highlight: rgba(74, 222, 128, 0.1);
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
-}
-
-/* Subtle animation for the grid */
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-  position: relative;
-  overflow-x: hidden;
-  transition: background-color var(--transition-speed) ease;
-  
-  /* Enhanced grid with multiple layers for depth */
   background-image: 
-    linear-gradient(var(--grid-highlight) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-highlight) 1px, transparent 1px),
-    linear-gradient(var(--grid-color) 0.5px, transparent 0.5px),
-    linear-gradient(90deg, var(--grid-color) 0.5px, transparent 0.5px);
-  background-size: 
-    var(--grid-size) var(--grid-size),
-    var(--grid-size) var(--grid-size),
-    calc(var(--grid-size)/5) calc(var(--grid-size)/5),
-    calc(var(--grid-size)/5) calc(var(--grid-size)/5);
-}
-
-/* Tech-oriented scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--accent-primary);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-tertiary);
-}
-
-/* Text selection styling */
-::selection {
-  background-color: var(--accent-tertiary);
-  color: white;
-}
-
-/* Style enhancements for common elements */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  margin-bottom: 1rem;
-  color: var(--accent-primary);
-}
-
-a {
-  color: var(--accent-primary);
-  text-decoration: none;
-  transition: all var(--transition-speed);
+    linear-gradient(var(--grid-color) 6px, transparent 0px),
+    linear-gradient(90deg, var(--grid-color) 6px, transparent 0px);
+  background-size: var(--grid-size) var(--grid-size);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
   position: relative;
-}
-
-a:hover {
-  color: var(--accent-tertiary);
-}
-
-a::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--accent-tertiary);
-  transition: width var(--transition-speed);
-}
-
-a:hover::after {
-  width: 100%;
-}
-
-button, .button {
-  background-color: var(--accent-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.5rem 1.25rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-speed);
-  box-shadow: var(--shadow-sm);
-}
-
-button:hover, .button:hover {
-  background-color: var(--accent-tertiary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-code {
-  font-family: var(--font-mono), monospace;
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  font-size: 0.9em;
-}
-
-.card {
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-md);
-  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-@media (prefers-color-scheme: dark) {
-  .card {
-    background-color: rgba(30, 41, 59, 0.8);
-  }
-}
-
-/* Subtle parallax effect for a touch of depth */
-.parallax-grid {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-  opacity: 0.4;
-  animation: pulse 8s infinite ease-in-out;
+  overflow: hidden;
 }
