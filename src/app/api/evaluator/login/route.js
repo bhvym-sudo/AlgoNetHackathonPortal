@@ -1,4 +1,3 @@
-// /app/api/evaluator/login/route.js
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 

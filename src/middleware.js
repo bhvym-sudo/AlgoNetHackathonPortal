@@ -2,8 +2,8 @@
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
-  // Get the pathname of the request
   const { pathname } = request.nextUrl;
+  console.log("Middleware")
 
   // Check if the request is for the evaluator dashboard
   if (pathname.startsWith('/evaluator/dashboard')) {
@@ -22,7 +22,6 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// Define on which paths the middleware will be executed
 export const config = {
   matcher: ['/evaluator/dashboard/:path*'],
 };

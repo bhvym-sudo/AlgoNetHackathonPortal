@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 
+
+
 export default function EvaluatorPortal() {
   // State for team data and UI control
   const [teamId, setTeamId] = useState('');
@@ -16,6 +18,8 @@ export default function EvaluatorPortal() {
   // Simplified marks state
   const [marks, setMarks] = useState(0);
   const [feedback, setFeedback] = useState('');
+
+  
 
   const loadProblemStatements = async () => {
     try {
@@ -353,6 +357,18 @@ export default function EvaluatorPortal() {
               >
                 Close
               </button>
+              <button
+  onClick={async () => {
+    await fetch('/api/evaluator/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    window.location.href = '/evaluator';
+  }}
+  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+>
+  Logout
+</button>
             </div>
           </>
         )}
