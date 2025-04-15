@@ -70,7 +70,7 @@ export async function POST(request) {
         });
       }
       
-      // Check member 2 changes
+
       if ((existing.member2Name || "") !== (member2Name || "") || 
           (existing.member2Enrollment || "") !== (member2Enrollment || "") ||
           existing.member2Present !== member2Present) {
@@ -89,7 +89,7 @@ export async function POST(request) {
         });
       }
       
-      // Check member 3 changes
+
       if ((existing.member3Name || "") !== (member3Name || "") || 
           (existing.member3Enrollment || "") !== (member3Enrollment || "") ||
           existing.member3Present !== member3Present) {
@@ -108,7 +108,6 @@ export async function POST(request) {
         });
       }
       
-      // Check member 4 changes
       if ((existing.member4Name || "") !== (member4Name || "") || 
           (existing.member4Enrollment || "") !== (member4Enrollment || "") ||
           existing.member4Present !== member4Present) {

@@ -54,6 +54,11 @@ export default function EvaluatorDashboard() {
     }
   };
 
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setTeamData({ ...teamData, [name]: checked });
+  };
+
   const handleSubmitEvaluation = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -85,11 +90,48 @@ export default function EvaluatorDashboard() {
     }
   };
 
-  const toggleSubmissionStatus = () => {
-    setTeamData({
+  const toggleSubmissionStatus = async () => {
+    // Set loading state
+    setIsSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    
+    // Update locally first for immediate feedback
+    const updatedData = {
       ...teamData,
       submitted: !teamData.submitted
-    });
+    };
+    setTeamData(updatedData);
+    
+    // Save to database
+    try {
+      const res = await fetch('/api/team', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+  
+      const result = await res.json();
+      
+      if (result.error) {
+        setErrorMessage(result.error);
+        // Revert back if there was an error
+        setTeamData({...teamData});
+      } else {
+        setSuccessMessage(`Team ${updatedData.submitted ? 'locked' : 'unlocked'} successfully!`);
+        // Ensure we have the latest data
+        setTeamData(result.team || updatedData);
+      }
+    } catch (err) {
+      console.error("Status toggle failed:", err);
+      setErrorMessage("Failed to update submission status.");
+      // Revert back on error
+      setTeamData({...teamData});
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -97,6 +139,11 @@ export default function EvaluatorDashboard() {
     setTeamData(null);
     setErrorMessage('');
     setSuccessMessage('');
+  };
+
+  // Helper function to check if a member has data
+  const hasMemberData = (name, enrollment) => {
+    return (name && name.trim() !== '') || (enrollment && enrollment.trim() !== '');
   };
 
   return (
@@ -151,148 +198,171 @@ export default function EvaluatorDashboard() {
                 <button
                   type="button"
                   onClick={toggleSubmissionStatus}
-                  className="ml-2 text-sm text-blue-600 hover:text-blue-800"
+                  className={`ml-2 text-sm px-3 py-1 rounded ${teamData.submitted ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
+                  disabled={isSubmitting}
                 >
-                  {teamData.submitted ? 'Unlock' : 'Lock'}
+                  {isSubmitting ? '...' : teamData.submitted ? 'Unlock' : 'Lock'}
                 </button>
               </div>
             </div>
             
-            {/* Team Leader Section */}
+            {/* Team Leader Section - Always shown as team leader is required */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
               <h3 className="font-medium mb-3 text-gray-800">Team Leader</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Leader Name
+                    Team Leader name
                   </label>
-                  <input
-                    type="text"
-                    name="leaderName"
-                    value={teamData.leaderName || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.leaderName || ''}
+                  </label>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Enrollment ID
                   </label>
-                  <input
-                    type="text"
-                    name="leaderEnrollment"
-                    value={teamData.leaderEnrollment || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    {teamData.leaderEnrollment || ''}
+                  </label>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Mobile
                   </label>
+                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    {teamData.leaderMobile || ''}
+                  </label>
+                </div>
+                <div className="flex items-center">
                   <input
-                    type="text"
-                    name="leaderMobile"
-                    value={teamData.leaderMobile || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    type="checkbox"
+                    id="leaderPresent"
+                    name="leaderPresent"
+                    checked={teamData.leaderPresent || false}
+                    onChange={handleCheckboxChange}
+                    className="h-5 w-5 text-blue-600 border-gray-300 rounded"
                   />
+                  <label htmlFor="leaderPresent" className="ml-2 text-sm font-medium text-gray-700">
+                    Present
+                  </label>
                 </div>
               </div>
             </div>
 
-            {/* Member 2 Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Team Member 2</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Name
-                  </label>
-                  <input
-                    type="text"
-                    name="member2Name"
-                    value={teamData.member2Name || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Enrollment ID
-                  </label>
-                  <input
-                    type="text"
-                    name="member2Enrollment"
-                    value={teamData.member2Enrollment || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            {/* Member 2 Section - Conditionally rendered */}
+            {hasMemberData(teamData.member2Name, teamData.member2Enrollment) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded">
+                <h3 className="font-medium mb-3 text-gray-800">Team Member 2</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Name
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member2Name || ''}
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Enrollment ID
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member2Enrollment || ''}
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member2Present"
+                      name="member2Present"
+                      checked={teamData.member2Present || false}
+                      onChange={handleCheckboxChange}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="member2Present" className="ml-2 text-sm font-medium text-gray-700">
+                      Present
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Member 3 Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Team Member 3</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Name
-                  </label>
-                  <input
-                    type="text"
-                    name="member3Name"
-                    value={teamData.member3Name || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Enrollment ID
-                  </label>
-                  <input
-                    type="text"
-                    name="member3Enrollment"
-                    value={teamData.member3Enrollment || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            {/* Member 3 Section - Conditionally rendered */}
+            {hasMemberData(teamData.member3Name, teamData.member3Enrollment) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded">
+                <h3 className="font-medium mb-3 text-gray-800">Team Member 3</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Name
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member3Name || ''}
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Enrollment ID
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member3Enrollment || ''}
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member3Present"
+                      name="member3Present"
+                      checked={teamData.member3Present || false}
+                      onChange={handleCheckboxChange}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="member3Present" className="ml-2 text-sm font-medium text-gray-700">
+                      Present
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Member 4 Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Team Member 4</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Name
-                  </label>
-                  <input
-                    type="text"
-                    name="member4Name"
-                    value={teamData.member4Name || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Member Enrollment ID
-                  </label>
-                  <input
-                    type="text"
-                    name="member4Enrollment"
-                    value={teamData.member4Enrollment || ''}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            {/* Member 4 Section - Conditionally rendered */}
+            {hasMemberData(teamData.member4Name, teamData.member4Enrollment) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded">
+                <h3 className="font-medium mb-3 text-gray-800">Team Member 4</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Name
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member4Name || ''}
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Member Enrollment ID
+                    </label>
+                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      {teamData.member4Enrollment || ''}
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member4Present"
+                      name="member4Present"
+                      checked={teamData.member4Present || false}
+                      onChange={handleCheckboxChange}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="member4Present" className="ml-2 text-sm font-medium text-gray-700">
+                      Present
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Problem Statement */}
             <div className="mb-6">
@@ -341,23 +411,6 @@ export default function EvaluatorDashboard() {
                 ></textarea>
               </div>
             </div>
-
-            {/* Team Changes History */}
-            {teamData.changes && teamData.changes.length > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
-                <h3 className="font-medium mb-3 text-gray-800">Change History</h3>
-                <div className="space-y-2">
-                  {teamData.changes.map((change, index) => (
-                    <div key={index} className="p-2 bg-white rounded border border-gray-100">
-                      <p className="text-sm">
-                        <span className="font-medium">{change.type} changes:</span> {' '}
-                        {JSON.stringify(change)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {successMessage && (
               <div className="p-3 mb-4 bg-green-50 border border-green-300 text-green-700 rounded">
