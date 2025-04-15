@@ -27,10 +27,10 @@ export async function POST(request) {
 
     const { 
       teamId,
-      leaderName, leaderEnrollment, leaderMobile,
-      member2Name, member2Enrollment,
-      member3Name, member3Enrollment,
-      member4Name, member4Enrollment,
+      leaderName, leaderEnrollment, leaderMobile, leaderPresent,
+      member2Name, member2Enrollment, member2Present,
+      member3Name, member3Enrollment, member3Present,
+      member4Name, member4Enrollment, member4Present,
       problemStatement,
       submitted,
       marks,
@@ -51,66 +51,78 @@ export async function POST(request) {
       // Check leader changes
       if (existing.leaderName !== leaderName || 
           existing.leaderEnrollment !== leaderEnrollment || 
-          existing.leaderMobile !== leaderMobile) {
+          existing.leaderMobile !== leaderMobile ||
+          existing.leaderPresent !== leaderPresent) {
         changesMap.push({
           type: "leader",
           old: {
             name: existing.leaderName,
             enrollment: existing.leaderEnrollment,
-            mobile: existing.leaderMobile
+            mobile: existing.leaderMobile,
+            present: existing.leaderPresent
           },
           new: {
             name: leaderName,
             enrollment: leaderEnrollment,
-            mobile: leaderMobile
+            mobile: leaderMobile,
+            present: leaderPresent
           }
         });
       }
       
       // Check member 2 changes
       if ((existing.member2Name || "") !== (member2Name || "") || 
-          (existing.member2Enrollment || "") !== (member2Enrollment || "")) {
+          (existing.member2Enrollment || "") !== (member2Enrollment || "") ||
+          existing.member2Present !== member2Present) {
         changesMap.push({
           type: "member2",
           old: {
             name: existing.member2Name || "",
-            enrollment: existing.member2Enrollment || ""
+            enrollment: existing.member2Enrollment || "",
+            present: existing.member2Present
           },
           new: {
             name: member2Name || "",
-            enrollment: member2Enrollment || ""
+            enrollment: member2Enrollment || "",
+            present: member2Present
           }
         });
       }
       
       // Check member 3 changes
       if ((existing.member3Name || "") !== (member3Name || "") || 
-          (existing.member3Enrollment || "") !== (member3Enrollment || "")) {
+          (existing.member3Enrollment || "") !== (member3Enrollment || "") ||
+          existing.member3Present !== member3Present) {
         changesMap.push({
           type: "member3",
           old: {
             name: existing.member3Name || "",
-            enrollment: existing.member3Enrollment || ""
+            enrollment: existing.member3Enrollment || "",
+            present: existing.member3Present
           },
           new: {
             name: member3Name || "",
-            enrollment: member3Enrollment || ""
+            enrollment: member3Enrollment || "",
+            present: member3Present
           }
         });
       }
       
       // Check member 4 changes
       if ((existing.member4Name || "") !== (member4Name || "") || 
-          (existing.member4Enrollment || "") !== (member4Enrollment || "")) {
+          (existing.member4Enrollment || "") !== (member4Enrollment || "") ||
+          existing.member4Present !== member4Present) {
         changesMap.push({
           type: "member4",
           old: {
             name: existing.member4Name || "",
-            enrollment: existing.member4Enrollment || ""
+            enrollment: existing.member4Enrollment || "",
+            present: existing.member4Present
           },
           new: {
             name: member4Name || "",
-            enrollment: member4Enrollment || ""
+            enrollment: member4Enrollment || "",
+            present: member4Present
           }
         });
       }
@@ -124,12 +136,16 @@ export async function POST(request) {
       existing.leaderName = leaderName;
       existing.leaderEnrollment = leaderEnrollment;
       existing.leaderMobile = leaderMobile;
+      existing.leaderPresent = leaderPresent || false;
       existing.member2Name = member2Name;
       existing.member2Enrollment = member2Enrollment;
+      existing.member2Present = member2Present || false;
       existing.member3Name = member3Name;
       existing.member3Enrollment = member3Enrollment;
+      existing.member3Present = member3Present || false;
       existing.member4Name = member4Name;
       existing.member4Enrollment = member4Enrollment;
+      existing.member4Present = member4Present || false;
       existing.problemStatement = problemStatement;
       existing.submitted = submitted;
       
@@ -142,7 +158,12 @@ export async function POST(request) {
       }
       
       if (changes) {
-        existing.changes = changes;
+        // If this is an attendance update, add it to existing changes
+        if (existing.changes && Array.isArray(existing.changes)) {
+          existing.changes = [...existing.changes, ...changes];
+        } else {
+          existing.changes = changes;
+        }
       }
 
       await existing.save();
@@ -158,12 +179,16 @@ export async function POST(request) {
         leaderName,
         leaderEnrollment,
         leaderMobile,
+        leaderPresent: leaderPresent || false,
         member2Name,
         member2Enrollment,
+        member2Present: member2Present || false,
         member3Name,
         member3Enrollment,
+        member3Present: member3Present || false,
         member4Name,
         member4Enrollment,
+        member4Present: member4Present || false,
         problemStatement,
         submitted,
         marks: marks || null,

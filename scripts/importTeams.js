@@ -67,7 +67,7 @@ const importData = async () => {
     const teams = data.map(item => {
       // Generate teamId with leading zeros
       const id = item.ID || 0;
-      const teamId = `TEAM${id.toString().padStart(3, '0')}`;
+      const teamId = `BTECH${id.toString().padStart(3, '0')}`;
       
       return {
         teamId,
