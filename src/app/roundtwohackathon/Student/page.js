@@ -44,7 +44,7 @@ export default function RoundTwoHackathon() {
     const { name, value } = e.target;
     
     if (name === 'marks') {
-      // Ensure marks are between 0 and 100
+
       const marks = parseInt(value);
       if (isNaN(marks)) {
         setTeamData({ ...teamData, [name]: '' });
@@ -57,7 +57,6 @@ export default function RoundTwoHackathon() {
     }
   };
 
-  // Remove this function completely
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     setTeamData({ ...teamData, [name]: checked });
@@ -95,19 +94,18 @@ export default function RoundTwoHackathon() {
   };
 
   const toggleSubmissionStatus = async () => {
-    // Set loading state
+
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
     
-    // Update locally first for immediate feedback
+
     const updatedData = {
       ...teamData,
       submitted: !teamData.submitted
     };
     setTeamData(updatedData);
-    
-    // Save to database
+
     try {
       const res = await fetch('/api/team', {
         method: 'POST',
@@ -121,17 +119,17 @@ export default function RoundTwoHackathon() {
       
       if (result.error) {
         setErrorMessage(result.error);
-        // Revert back if there was an error
+
         setTeamData({...teamData});
       } else {
         setSuccessMessage(`Team ${updatedData.submitted ? 'locked' : 'unlocked'} successfully!`);
-        // Ensure we have the latest data
+
         setTeamData(result.team || updatedData);
       }
     } catch (err) {
       console.error("Status toggle failed:", err);
       setErrorMessage("Failed to update submission status.");
-      // Revert back on error
+
       setTeamData({...teamData});
     } finally {
       setIsSubmitting(false);
@@ -145,12 +143,12 @@ export default function RoundTwoHackathon() {
     setSuccessMessage('');
   };
 
-  // Helper function to check if a member has data
+
   const hasMemberData = (name, enrollment) => {
     return (name && name.trim() !== '') || (enrollment && enrollment.trim() !== '');
   };
 
-  // Add these two functions INSIDE your component, before the return statement
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {

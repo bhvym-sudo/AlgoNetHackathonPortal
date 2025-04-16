@@ -133,39 +133,6 @@ export default function StudentDashboard() {
     }
   };
 
-  const updateAttendance = async () => {
-    setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-  
-    try {
-      const res = await fetch('/api/team', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...teamData,
-          teamId
-        }),
-      });
-  
-      const result = await res.json();
-      
-      if (result.error) {
-        setErrorMessage(result.error);
-      } else {
-        setSuccessMessage("Attendance updated successfully!");
-        setTeamData(result.team || teamData);
-      }
-    } catch (err) {
-      console.error("Attendance update failed:", err);
-      setErrorMessage("Failed to update attendance.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setTeamId('');
     setTeamData({
@@ -192,7 +159,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center text-black">AlgoNet Hackathon - Student Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center text-white">AlgoNet Hackathon - Student Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         {!teamLoaded ? (
@@ -386,8 +353,8 @@ export default function StudentDashboard() {
                     if (nextMember <= 4) {
                       setTeamData(prev => ({
                         ...prev,
-                        [`member${nextMember}Name`]: ' ',
-                        [`member${nextMember}Enrollment`]: ' '
+                        [`member${nextMember}Name`]: 'New Member',
+                        [`member${nextMember}Enrollment`]: 'Enter Enrollment'
                       }));
                     }
                   }}
@@ -431,16 +398,7 @@ export default function StudentDashboard() {
             )}
 
             <div className="flex gap-3">
-              {teamData.submitted ? (
-                <button
-                  type="button"
-                  onClick={updateAttendance}
-                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Updating..." : "Update Attendance"}
-                </button>
-              ) : (
+              {!teamData.submitted ? (
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700"
@@ -448,7 +406,7 @@ export default function StudentDashboard() {
                 >
                   {isLoading ? "Submitting..." : "Submit Registration"}
                 </button>
-              )}
+              ) : null}
               <button
                 type="button"
                 onClick={resetForm}

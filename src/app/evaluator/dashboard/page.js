@@ -369,13 +369,10 @@ export default function EvaluatorDashboard() {
               <label className="block text-gray-700 font-medium mb-2">
                 Problem Statement
               </label>
-              <input
-                type="text"
+              <label
                 name="problemStatement"
-                value={teamData.problemStatement || ''}
-                onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              >{teamData.problemStatement || ''}</label>
             </div>
 
             {/* Evaluation Section */}
@@ -384,13 +381,13 @@ export default function EvaluatorDashboard() {
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marks (0-100)
+                  Marks (0-20)
                 </label>
                 <input
                   type="number"
                   name="marks"
                   min="0"
-                  max="100"
+                  max="20"
                   value={teamData.marks || ''}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
