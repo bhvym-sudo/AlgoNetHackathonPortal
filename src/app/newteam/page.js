@@ -83,7 +83,7 @@ export default function NewTeamRegistration() {
         body: JSON.stringify({
           emails,
           teamId,
-          teamName: `${form.leaderName}'s Team`,
+          teamName: `${form.leaderName}&#39;s Team`,
           members: [
             { name: form.leaderName, role: 'Leader' },
             form.member2Name ? { name: form.member2Name, role: 'Member' } : null,
