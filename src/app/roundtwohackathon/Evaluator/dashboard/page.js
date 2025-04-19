@@ -47,7 +47,7 @@ export default function EvaluatorDashboard() {
   const loadTeamFiles = async (teamId) => {
     setIsLoadingFiles(true);
     try {
-      const res = await fetch(`/api/files/list?teamId=${teamId}`);
+      const res = await fetch(`/api/files?teamId=${teamId}`);
       const data = await res.json();
       if (data.files) {
         setTeamFiles(data.files);
