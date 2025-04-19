@@ -8,6 +8,8 @@ export default function EvaluatorDashboard() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [teamFiles, setTeamFiles] = useState([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
   const loadTeamData = async () => {
     if (!teamId.trim()) {
@@ -24,9 +26,14 @@ export default function EvaluatorDashboard() {
       const data = await res.json();
       
       if (data && data.teamId) {
+        if (!data.round2) {
+          data.round2 = { marks: '', feedback: '' };
+        }
         setTeamData(data);
+        await loadTeamFiles(data.teamId);
       } else {
         setTeamData(null);
+        setTeamFiles([]);
         setErrorMessage("Team not found");
       }
     } catch (err) {
@@ -37,25 +44,53 @@ export default function EvaluatorDashboard() {
     }
   };
 
+  const loadTeamFiles = async (teamId) => {
+    setIsLoadingFiles(true);
+    try {
+      const res = await fetch(`/api/files/list?teamId=${teamId}`);
+      const data = await res.json();
+      if (data.files) {
+        setTeamFiles(data.files);
+      } else {
+        setTeamFiles([]);
+      }
+    } catch (err) {
+      console.error("Failed to load team files", err);
+      setTeamFiles([]);
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'marks') {
-      // Ensure marks are between 0 and 80
+    if (name === 'round2.marks') {
       const marks = parseInt(value);
       if (isNaN(marks)) {
-        setTeamData({ ...teamData, [name]: '' });
+        setTeamData({
+          ...teamData,
+          round2: { ...teamData.round2, marks: '' }
+        });
       } else {
-        // Strictly enforce the 0-80 range
         const validMarks = Math.min(80, Math.max(0, marks));
-        setTeamData({ ...teamData, [name]: validMarks });
+        setTeamData({
+          ...teamData,
+          round2: { ...teamData.round2, marks: validMarks }
+        });
         
-        // If user tries to enter a value > 80, show a message
         if (marks > 80) {
           setErrorMessage("Maximum marks allowed is 80");
-          setTimeout(() => setErrorMessage(""), 3000); // Clear after 3 seconds
+          setTimeout(() => setErrorMessage(""), 3000);
         }
       }
+    } else if (name === 'round2.feedback') {
+      setTeamData({
+        ...teamData,
+        round2: { ...teamData.round2, feedback: value }
+      });
+    } else if (name === 'problemStatement') {
+      setTeamData({ ...teamData, problemStatement: value });
     } else {
       setTeamData({ ...teamData, [name]: value });
     }
@@ -66,19 +101,74 @@ export default function EvaluatorDashboard() {
     setTeamData({ ...teamData, [name]: checked });
   };
 
+  const validateForm = () => {
+    let isValid = true;
+    let validationMessage = '';
+
+    if (!teamData.problemStatement || !teamData.problemStatement.trim()) {
+      isValid = false;
+      validationMessage = 'Please enter a problem statement';
+    }
+    
+    if (teamData.round2?.marks === undefined || teamData.round2?.marks === '') {
+      isValid = false;
+      validationMessage = validationMessage || 'Please enter marks for Round 2';
+    }
+    
+    if (!teamData.leaderPresent) {
+      isValid = false;
+      validationMessage = validationMessage || 'Please mark team leader attendance';
+    }
+    
+    if (hasMemberData(teamData.member2Name, teamData.member2Enrollment) && !teamData.member2Present) {
+      isValid = false;
+      validationMessage = validationMessage || 'Please mark all team members attendance';
+    }
+    
+    if (hasMemberData(teamData.member3Name, teamData.member3Enrollment) && !teamData.member3Present) {
+      isValid = false;
+      validationMessage = validationMessage || 'Please mark all team members attendance';
+    }
+    
+    if (hasMemberData(teamData.member4Name, teamData.member4Enrollment) && !teamData.member4Present) {
+      isValid = false;
+      validationMessage = validationMessage || 'Please mark all team members attendance';
+    }
+    
+    if (!teamData.round2?.feedback || !teamData.round2?.feedback.trim()) {
+      isValid = false;
+      validationMessage = validationMessage || 'Please provide feedback for the team';
+    }
+
+    if (!isValid) {
+      setErrorMessage(validationMessage);
+    }
+    
+    return isValid;
+  };
+
   const handleSubmitEvaluation = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+  
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
   
     try {
+      const evaluationData = {
+        ...teamData,
+        round2: {
+          marks: teamData.round2?.marks || 0,
+          feedback: teamData.round2?.feedback || '',
+          evaluatedAt: new Date().toISOString()
+        }
+      };
+  
       const res = await fetch('/api/team', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(teamData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(evaluationData),
       });
   
       const result = await res.json();
@@ -86,8 +176,8 @@ export default function EvaluatorDashboard() {
       if (result.error) {
         setErrorMessage(result.error);
       } else {
-        setSuccessMessage("Team evaluation saved successfully!");
-        setTeamData(result.team || teamData);
+        setSuccessMessage("Round 2 evaluation saved successfully!");
+        resetForm();
       }
     } catch (err) {
       console.error("Submission failed:", err);
@@ -96,27 +186,22 @@ export default function EvaluatorDashboard() {
       setIsSubmitting(false);
     }
   };
-
+  
   const toggleSubmissionStatus = async () => {
-    // Set loading state
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
     
-    // Update locally first for immediate feedback
     const updatedData = {
       ...teamData,
       submitted: !teamData.submitted
     };
     setTeamData(updatedData);
     
-    // Save to database
     try {
       const res = await fetch('/api/team', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData),
       });
   
@@ -124,17 +209,14 @@ export default function EvaluatorDashboard() {
       
       if (result.error) {
         setErrorMessage(result.error);
-        // Revert back if there was an error
         setTeamData({...teamData});
       } else {
         setSuccessMessage(`Team ${updatedData.submitted ? 'locked' : 'unlocked'} successfully!`);
-        // Ensure we have the latest data
         setTeamData(result.team || updatedData);
       }
     } catch (err) {
       console.error("Status toggle failed:", err);
       setErrorMessage("Failed to update submission status.");
-      // Revert back on error
       setTeamData({...teamData});
     } finally {
       setIsSubmitting(false);
@@ -144,23 +226,29 @@ export default function EvaluatorDashboard() {
   const resetForm = () => {
     setTeamId('');
     setTeamData(null);
+    setTeamFiles([]);
     setErrorMessage('');
     setSuccessMessage('');
+    setIsLoading(false);
+    setIsSubmitting(false);
+    
+    setTimeout(() => {
+      alert("Evaluation submitted successfully! Please enter the next Team ID.");
+    }, 500);
   };
 
-  // Helper function to check if a member has data
   const hasMemberData = (name, enrollment) => {
     return (name && name.trim() !== '') || (enrollment && enrollment.trim() !== '');
   };
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Evaluator Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Round 2 Evaluator Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-2">
-            Team ID
+            Team ID <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -213,7 +301,7 @@ export default function EvaluatorDashboard() {
               </div>
             </div>
             
-            {/* Team Leader Section - Always shown as team leader is required */}
+            {/* Team Leader Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
               <h3 className="font-medium mb-3 text-gray-800">Team Leader</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,15 +309,15 @@ export default function EvaluatorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Team Leader name
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      {teamData.leaderName || ''}
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
+                    {teamData.leaderName || ''}
                   </label>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Enrollment ID
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                     {teamData.leaderEnrollment || ''}
                   </label>
                 </div>
@@ -237,7 +325,7 @@ export default function EvaluatorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Mobile
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                     {teamData.leaderMobile || ''}
                   </label>
                 </div>
@@ -249,15 +337,16 @@ export default function EvaluatorDashboard() {
                     checked={teamData.leaderPresent || false}
                     onChange={handleCheckboxChange}
                     className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                    required
                   />
                   <label htmlFor="leaderPresent" className="ml-2 text-sm font-medium text-gray-700">
-                    Present
+                    Present <span className="text-red-500">*</span>
                   </label>
                 </div>
               </div>
             </div>
 
-            {/* Member 2 Section - Conditionally rendered */}
+            {/* Member Sections (2-4) */}
             {hasMemberData(teamData.member2Name, teamData.member2Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 2</h3>
@@ -266,7 +355,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member2Name || ''}
                     </label>
                   </div>
@@ -274,7 +363,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member2Enrollment || ''}
                     </label>
                   </div>
@@ -286,16 +375,16 @@ export default function EvaluatorDashboard() {
                       checked={teamData.member2Present || false}
                       onChange={handleCheckboxChange}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                      required={hasMemberData(teamData.member2Name, teamData.member2Enrollment)}
                     />
                     <label htmlFor="member2Present" className="ml-2 text-sm font-medium text-gray-700">
-                      Present
+                      Present <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Member 3 Section - Conditionally rendered */}
             {hasMemberData(teamData.member3Name, teamData.member3Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 3</h3>
@@ -304,7 +393,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member3Name || ''}
                     </label>
                   </div>
@@ -312,7 +401,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member3Enrollment || ''}
                     </label>
                   </div>
@@ -324,16 +413,16 @@ export default function EvaluatorDashboard() {
                       checked={teamData.member3Present || false}
                       onChange={handleCheckboxChange}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                      required={hasMemberData(teamData.member3Name, teamData.member3Enrollment)}
                     />
                     <label htmlFor="member3Present" className="ml-2 text-sm font-medium text-gray-700">
-                      Present
+                      Present <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Member 4 Section - Conditionally rendered */}
             {hasMemberData(teamData.member4Name, teamData.member4Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 4</h3>
@@ -342,7 +431,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member4Name || ''}
                     </label>
                   </div>
@@ -350,7 +439,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member4Enrollment || ''}
                     </label>
                   </div>
@@ -362,9 +451,10 @@ export default function EvaluatorDashboard() {
                       checked={teamData.member4Present || false}
                       onChange={handleCheckboxChange}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                      required={hasMemberData(teamData.member4Name, teamData.member4Enrollment)}
                     />
                     <label htmlFor="member4Present" className="ml-2 text-sm font-medium text-gray-700">
-                      Present
+                      Present <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
@@ -374,7 +464,7 @@ export default function EvaluatorDashboard() {
             {/* Problem Statement */}
             <div className="mb-6">
               <label className="block text-gray-700 font-medium mb-2">
-                Problem Statement
+                Problem Statement <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -382,63 +472,115 @@ export default function EvaluatorDashboard() {
                 value={teamData.problemStatement || ''}
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                placeholder="Enter the problem statement"
               />
             </div>
 
-            {/* Evaluation Section */}
+            {/* Round 1 Evaluation Summary */}
+            {teamData.round1 && teamData.round1.marks !== undefined && (
+              <div className="mb-6 p-4 bg-yellow-50 rounded border border-yellow-200">
+                <h3 className="font-medium mb-3 text-gray-800">Round 1 Evaluation Summary</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Round 1 Marks
+                    </label>
+                    <p className="text-gray-800 font-semibold">{teamData.round1.marks}/20</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Round 1 Feedback
+                    </label>
+                    <p className="text-gray-700">{teamData.round1.feedback || 'No feedback provided'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Round 2 Evaluation Section */}
             <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-              <h3 className="font-medium mb-3 text-gray-800">Evaluation</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Round 2 Evaluation</h3>
               
-              // In the Evaluation Section:
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marks (0-80)
+                  Round 2 Marks (0-80) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
-                  name="marks"
+                  name="round2.marks"
                   min="0"
                   max="80"
-                  value={teamData.marks || ''}
+                  value={teamData.round2?.marks || ''}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  placeholder="Enter marks (0-80)"
                 />
                 <p className="text-xs text-gray-500 mt-1">Maximum marks allowed: 80</p>
               </div>
               
-              {/* Fix the file preview section */}
+              {/* File preview section */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Team Submission Files
                 </label>
                 <div className="p-3 bg-gray-100 rounded border border-gray-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">
-                      Team {teamData.teamId} Submissions
-                    </span>
-                    <a 
-                      href={`/api/files?teamId=${teamData.teamId}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
-                    >
-                      View Uploaded Files
-                    </a>
-                  </div>
+                  {isLoadingFiles ? (
+                    <div className="flex justify-center items-center p-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                  ) : teamFiles.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {teamFiles.length} file(s) uploaded
+                        </span>
+                      </div>
+                      <ul className="space-y-2">
+                        {teamFiles.map((file, index) => (
+                          <li key={index} className="flex justify-between items-center p-2 bg-white rounded border border-gray-300">
+                            <span className="text-sm text-gray-700 truncate max-w-xs">
+                              {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                            </span>
+                            <div className="flex gap-2">
+                              <a 
+                                href={`/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                View
+                              </a>
+                              <a 
+                                href={`/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}&download=true`}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                              >
+                                Download
+                              </a>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No files uploaded by this team</p>
+                  )}
                 </div>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Feedback
+                  Round 2 Feedback <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  name="feedback"
-                  value={teamData.feedback || ''}
+                  name="round2.feedback"
+                  value={teamData.round2?.feedback || ''}
                   onChange={handleInputChange}
                   rows="4"
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Provide feedback for the team..."
+                  placeholder="Provide feedback for the team's round 2 performance..."
+                  required
                 ></textarea>
               </div>
             </div>
@@ -464,7 +606,7 @@ export default function EvaluatorDashboard() {
                     Saving...
                   </span>
                 ) : (
-                  "Save Evaluation"
+                  "Save Round 2 Evaluation"
                 )}
               </button>
               
@@ -478,6 +620,10 @@ export default function EvaluatorDashboard() {
             </div>
           </form>
         )}
+      </div>
+      
+      <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded text-gray-700 text-sm">
+        <p><span className="text-red-500">*</span> All fields marked with an asterisk are required</p>
       </div>
     </div>
   );

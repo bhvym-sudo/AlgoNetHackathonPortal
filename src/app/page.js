@@ -192,6 +192,14 @@ export default function StudentDashboard() {
                 ) : "Load Team"}
               </button>
             </div>
+            <div className="mt-2 text-center">
+              <a 
+                href="/newteam" 
+                className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+              >
+                New Team Registration
+              </a>
+            </div>
             {errorMessage && <p className="text-red-500 mt-1 font-medium">{errorMessage}</p>}
           </div>
         ) : (

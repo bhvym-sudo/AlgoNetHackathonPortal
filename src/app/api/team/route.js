@@ -12,6 +12,13 @@ export async function GET(request) {
   try {
     await connectToDB();
     const team = await Team.findOne({ teamId });
+    
+    // Initialize round data if not present
+    if (team) {
+      if (!team.round1) team.round1 = { marks: null, feedback: null, evaluatedAt: null };
+      if (!team.round2) team.round2 = { marks: null, feedback: null, evaluatedAt: null };
+    }
+    
     return Response.json(team || {});
   } catch (error) {
     console.error("Error fetching team:", error);
@@ -33,8 +40,10 @@ export async function POST(request) {
       member4Name, member4Enrollment, member4Present,
       problemStatement,
       submitted,
-      marks,
-      feedback
+      round1,
+      round2,
+      marks, // Legacy field (deprecated - use round1.marks or round2.marks instead)
+      feedback // Legacy field (deprecated - use round1.feedback or round2.feedback instead)
     } = body;
 
     if (!teamId) {
@@ -70,7 +79,7 @@ export async function POST(request) {
         });
       }
       
-
+      // Check member2 changes
       if ((existing.member2Name || "") !== (member2Name || "") || 
           (existing.member2Enrollment || "") !== (member2Enrollment || "") ||
           existing.member2Present !== member2Present) {
@@ -89,7 +98,7 @@ export async function POST(request) {
         });
       }
       
-
+      // Check member3 changes
       if ((existing.member3Name || "") !== (member3Name || "") || 
           (existing.member3Enrollment || "") !== (member3Enrollment || "") ||
           existing.member3Present !== member3Present) {
@@ -108,6 +117,7 @@ export async function POST(request) {
         });
       }
       
+      // Check member4 changes
       if ((existing.member4Name || "") !== (member4Name || "") || 
           (existing.member4Enrollment || "") !== (member4Enrollment || "") ||
           existing.member4Present !== member4Present) {
@@ -131,7 +141,7 @@ export async function POST(request) {
         changes = changesMap;
       }
 
-      // Update existing team
+      // Update basic team info
       existing.leaderName = leaderName;
       existing.leaderEnrollment = leaderEnrollment;
       existing.leaderMobile = leaderMobile;
@@ -148,16 +158,41 @@ export async function POST(request) {
       existing.problemStatement = problemStatement;
       existing.submitted = submitted;
       
-      // Only update marks and feedback if they're provided
-      if (marks !== undefined) {
-        existing.marks = marks;
-      }
-      if (feedback !== undefined) {
-        existing.feedback = feedback;
+      // Handle round1 data
+      if (round1) {
+        existing.round1 = {
+          ...existing.round1 || {},
+          ...round1,
+          evaluatedAt: round1.evaluatedAt || (round1.marks ? new Date().toISOString() : null)
+        };
       }
       
+      // Handle round2 data
+      if (round2) {
+        existing.round2 = {
+          ...existing.round2 || {},
+          ...round2,
+          evaluatedAt: round2.evaluatedAt || (round2.marks ? new Date().toISOString() : null)
+        };
+      }
+      
+      // Backward compatibility for legacy marks/feedback fields
+      if (marks !== undefined) {
+        console.warn("Using deprecated 'marks' field - please use round1.marks or round2.marks instead");
+        // Default to round1 if no round specified
+        if (!existing.round1) existing.round1 = {};
+        existing.round1.marks = marks;
+      }
+      
+      if (feedback !== undefined) {
+        console.warn("Using deprecated 'feedback' field - please use round1.feedback or round2.feedback instead");
+        // Default to round1 if no round specified
+        if (!existing.round1) existing.round1 = {};
+        existing.round1.feedback = feedback;
+      }
+      
+      // Track changes if any
       if (changes) {
-        // If this is an attendance update, add it to existing changes
         if (existing.changes && Array.isArray(existing.changes)) {
           existing.changes = [...existing.changes, ...changes];
         } else {
@@ -172,7 +207,7 @@ export async function POST(request) {
         team: existing 
       });
     } else {
-      // Create new team
+      // Create new team with proper round structures
       const newTeam = await Team.create({
         teamId,
         leaderName,
@@ -190,8 +225,8 @@ export async function POST(request) {
         member4Present: member4Present || false,
         problemStatement,
         submitted,
-        marks: marks || null,
-        feedback: feedback || null,
+        round1: round1 || { marks: null, feedback: null, evaluatedAt: null },
+        round2: round2 || { marks: null, feedback: null, evaluatedAt: null },
         changes: null
       });
 

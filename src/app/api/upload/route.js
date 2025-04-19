@@ -5,16 +5,9 @@ import path from 'path';
 export async function POST(request) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file');
     const teamId = formData.get('teamId');
     const teamName = formData.get('teamName');
-
-    if (!file) {
-      return NextResponse.json(
-        { error: "File is required" },
-        { status: 400 }
-      );
-    }
+    const fileCount = formData.get('fileCount');
 
     if (!teamId) {
       return NextResponse.json(
@@ -23,44 +16,66 @@ export async function POST(request) {
       );
     }
     
+    // Get all files from the form data
+    const uploadedFiles = [];
+    const numberOfFiles = fileCount ? parseInt(fileCount) : 5; // Default to checking up to 5 files
+    
+    for (let i = 0; i < numberOfFiles; i++) {
+      const file = formData.get(`file${i}`);
+      if (file && file.size > 0) {
+        uploadedFiles.push(file);
+      }
+    }
+    
+    if (uploadedFiles.length === 0) {
+      return NextResponse.json(
+        { error: "No files found in request" },
+        { status: 400 }
+      );
+    }
+
     // Use teamId for folder name (more reliable than teamName)
     const safeTeamId = teamId.replace(/[^a-zA-Z0-9_-]/g, '_');
     
     // Create the main uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'uploads_teams');
     await mkdir(uploadsDir, { recursive: true });
-
+    
     // Create a team-specific directory
     const teamDir = path.join(uploadsDir, safeTeamId);
     await mkdir(teamDir, { recursive: true });
-
-    // Convert file to buffer and save it
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Save file in the team's directory
-    const filePath = path.join(teamDir, file.name);
-    await writeFile(filePath, buffer);
-
-    console.log(`File uploaded to: ${filePath}`);
-
+    
+    // Process all files
+    const savedFiles = [];
+    
+    for (const file of uploadedFiles) {
+      // Convert file to buffer and save it
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      // Save file in the team's directory
+      const filePath = path.join(teamDir, file.name);
+      await writeFile(filePath, buffer);
+      
+      savedFiles.push({
+        name: file.name,
+        path: `/uploads_teams/${safeTeamId}/${file.name}`,
+        size: file.size
+      });
+      
+      console.log(`File uploaded to: ${filePath}`);
+    }
+    
     return NextResponse.json({
       success: true,
-      message: "File uploaded successfully",
-      filePath: `/uploads_teams/${safeTeamId}/${file.name}`
+      message: `${savedFiles.length} file(s) uploaded successfully`,
+      files: savedFiles
     });
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error uploading files:', error);
     return NextResponse.json(
-      { error: "Failed to upload file: " + error.message },
+      { error: "Failed to upload files: " + error.message },
       { status: 500 }
     );
   }
 }
-
-// Remove the config export as it's not needed in App Router
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

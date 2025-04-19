@@ -24,6 +24,10 @@ export default function EvaluatorDashboard() {
       const data = await res.json();
       
       if (data && data.teamId) {
+        // Initialize round1 data if not present
+        if (!data.round1) {
+          data.round1 = { marks: '', feedback: '' };
+        }
         setTeamData(data);
       } else {
         setTeamData(null);
@@ -41,14 +45,34 @@ export default function EvaluatorDashboard() {
     const { name, value } = e.target;
     
     if (name === 'marks') {
-      // Ensure marks are between 0 and 100
+      // Ensure marks are between 0 and 20
       const marks = parseInt(value);
       if (isNaN(marks)) {
-        setTeamData({ ...teamData, [name]: '' });
+        setTeamData({
+          ...teamData,
+          round1: {
+            ...teamData.round1,
+            marks: ''
+          }
+        });
       } else {
-        const validMarks = Math.min(100, Math.max(0, marks));
-        setTeamData({ ...teamData, [name]: validMarks });
+        const validMarks = Math.min(20, Math.max(0, marks));
+        setTeamData({
+          ...teamData,
+          round1: {
+            ...teamData.round1,
+            marks: validMarks
+          }
+        });
       }
+    } else if (name === 'feedback') {
+      setTeamData({
+        ...teamData,
+        round1: {
+          ...teamData.round1,
+          feedback: value
+        }
+      });
     } else {
       setTeamData({ ...teamData, [name]: value });
     }
@@ -61,17 +85,36 @@ export default function EvaluatorDashboard() {
 
   const handleSubmitEvaluation = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!teamData.round1.marks) {
+      setErrorMessage("Please enter marks for the team");
+      return;
+    }
+    
+    if (!teamData.round1.feedback || !teamData.round1.feedback.trim()) {
+      setErrorMessage("Please provide feedback for the team");
+      return;
+    }
+    
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
   
     try {
+      const evaluationData = {
+        ...teamData,
+        round1: {
+          marks: teamData.round1.marks,
+          feedback: teamData.round1.feedback,
+          evaluatedAt: new Date().toISOString()
+        }
+      };
+  
       const res = await fetch('/api/team', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(teamData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(evaluationData),
       });
   
       const result = await res.json();
@@ -79,8 +122,8 @@ export default function EvaluatorDashboard() {
       if (result.error) {
         setErrorMessage(result.error);
       } else {
-        setSuccessMessage("Team evaluation saved successfully!");
-        setTeamData(result.team || teamData);
+        setSuccessMessage("Round 1 evaluation saved successfully!");
+        resetForm();
       }
     } catch (err) {
       console.error("Submission failed:", err);
@@ -89,7 +132,7 @@ export default function EvaluatorDashboard() {
       setIsSubmitting(false);
     }
   };
-
+  
   const toggleSubmissionStatus = async () => {
     // Set loading state
     setIsSubmitting(true);
@@ -139,12 +182,32 @@ export default function EvaluatorDashboard() {
     setTeamData(null);
     setErrorMessage('');
     setSuccessMessage('');
+    setIsLoading(false);
+    setIsSubmitting(false);
+    
+    // Show prompt to enter new team ID
+    setTimeout(() => {
+      alert("Evaluation submitted successfully! Please enter the next Team ID.");
+    }, 500);
   };
 
   // Helper function to check if a member has data
   const hasMemberData = (name, enrollment) => {
     return (name && name.trim() !== '') || (enrollment && enrollment.trim() !== '');
   };
+
+  // Get the round1 marks and feedback
+  const getRound1Data = () => {
+    if (!teamData || !teamData.round1) {
+      return { marks: '', feedback: '' };
+    }
+    return {
+      marks: teamData.round1.marks || '',
+      feedback: teamData.round1.feedback || ''
+    };
+  };
+
+  const { marks, feedback } = getRound1Data();
 
   return (
     <div className="max-w-3xl mx-auto p-4">
@@ -214,7 +277,7 @@ export default function EvaluatorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Team Leader name
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.leaderName || ''}
                   </label>
                 </div>
@@ -222,7 +285,7 @@ export default function EvaluatorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Enrollment ID
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     {teamData.leaderEnrollment || ''}
                   </label>
                 </div>
@@ -230,7 +293,7 @@ export default function EvaluatorDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Leader Mobile
                   </label>
-                  <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     {teamData.leaderMobile || ''}
                   </label>
                 </div>
@@ -259,7 +322,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member2Name || ''}
                     </label>
                   </div>
@@ -267,7 +330,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member2Enrollment || ''}
                     </label>
                   </div>
@@ -297,7 +360,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member3Name || ''}
                     </label>
                   </div>
@@ -305,7 +368,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member3Enrollment || ''}
                     </label>
                   </div>
@@ -335,7 +398,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member4Name || ''}
                     </label>
                   </div>
@@ -343,7 +406,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Enrollment ID
                     </label>
-                    <label className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member4Enrollment || ''}
                     </label>
                   </div>
@@ -370,41 +433,54 @@ export default function EvaluatorDashboard() {
                 Problem Statement
               </label>
               <label
-                name="problemStatement"
-                className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >{teamData.problemStatement || ''}</label>
             </div>
 
+            {/* Round 1 Label */}
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-800">Round 1 Evaluation</h3>
+            </div>
+
+            {/* Evaluation Status */}
+            {teamData.round1?.evaluatedAt && (
+              <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-700">
+                  Round 1 was evaluated on {new Date(teamData.round1.evaluatedAt).toLocaleString()}
+                </p>
+              </div>
+            )}
+
             {/* Evaluation Section */}
-            <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-              <h3 className="font-medium mb-3 text-gray-800">Evaluation</h3>
-              
+            <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">              
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marks (0-20)
+                  Marks (0-20) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   name="marks"
                   min="0"
                   max="20"
-                  value={teamData.marks || ''}
+                  value={marks}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Feedback
+                  Feedback <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="feedback"
-                  value={teamData.feedback || ''}
+                  value={feedback}
                   onChange={handleInputChange}
                   rows="4"
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Provide feedback for the team..."
+                  required
                 ></textarea>
               </div>
             </div>
@@ -430,7 +506,7 @@ export default function EvaluatorDashboard() {
                     Saving...
                   </span>
                 ) : (
-                  "Save Evaluation"
+                  "Save Round 1 Evaluation"
                 )}
               </button>
               

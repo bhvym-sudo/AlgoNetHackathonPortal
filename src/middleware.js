@@ -8,7 +8,7 @@ export function middleware(request) {
   const toggles = toggleCookie ? JSON.parse(toggleCookie) : {};
 
   // Admin auth
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin-login')) {
     const session = request.cookies.get('admin_session')?.value;
     if (session !== 'authenticated') {
       const url = new URL('/admin-login', request.url);
