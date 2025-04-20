@@ -18,13 +18,17 @@ export default function StudentDashboard() {
     member4Enrollment: '',
     member4Present: false,
     problemStatement: '',
-    submitted: false
+    submitted: false,
+    submittedBy: '',
+    submittedAt: null
   });
   const [problemStatements, setProblemStatements] = useState([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Add state for current team member
+  const [currentMember, setCurrentMember] = useState('');
 
   const memberExists = (name, enrollment) => {
     return name?.trim() !== '' && enrollment?.trim() !== '';
@@ -74,9 +78,23 @@ export default function StudentDashboard() {
       const data = await res.json();
       
       if (data?.teamId) {
-        setTeamData(data);
+        // Map rnd1attstud attendance data to the present checkboxes
+        const updatedData = {
+          ...data,
+          submittedBy: data.submittedBy || '',
+          submittedAt: data.submittedAt || null,
+          // Set checkbox states from rnd1attstud if available
+          leaderPresent: data.rnd1attstud?.leader || false,
+          member2Present: data.rnd1attstud?.member2 || false,
+          member3Present: data.rnd1attstud?.member3 || false,
+          member4Present: data.rnd1attstud?.member4 || false
+        };
+        
+        setTeamData(updatedData);
         setTeamLoaded(true);
         loadProblemStatements();
+        // Reset current member selection when loading team
+        setCurrentMember('');
       } else {
         setErrorMessage("Please enter correct team ID");
         setTeamLoaded(false);
@@ -100,6 +118,13 @@ export default function StudentDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate that a team member is selected
+    if (!currentMember) {
+      setErrorMessage("Please select which team member you are");
+      return;
+    }
+    
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
@@ -113,7 +138,10 @@ export default function StudentDashboard() {
         body: JSON.stringify({
           ...teamData,
           teamId,
-          submitted: true
+          submitted: true,
+          submittedBy: currentMember,
+          submittedAt: new Date().toISOString(),
+          currentMember // Send the current member for attendance tracking
         }),
       });
   
@@ -150,11 +178,49 @@ export default function StudentDashboard() {
       member4Enrollment: '',
       member4Present: false,
       problemStatement: '',
-      submitted: false
+      submitted: false,
+      submittedBy: '',
+      submittedAt: null
     });
     setTeamLoaded(false);
     setErrorMessage('');
     setSuccessMessage('');
+    setCurrentMember('');
+  };
+
+  // Helper function to get member options for dropdown
+  const getMemberOptions = () => {
+    const options = [];
+    
+    if (teamData.leaderName) {
+      options.push({
+        id: 'leader',
+        name: teamData.leaderName,
+        enrollment: teamData.leaderEnrollment
+      });
+    }
+    
+    for (let i = 2; i <= 4; i++) {
+      const name = teamData[`member${i}Name`];
+      const enrollment = teamData[`member${i}Enrollment`];
+      
+      if (memberExists(name, enrollment)) {
+        options.push({
+          id: `member${i}`,
+          name,
+          enrollment
+        });
+      }
+    }
+    
+    return options;
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString();
   };
 
   return (
@@ -207,6 +273,12 @@ export default function StudentDashboard() {
             {teamData.submitted && (
               <div className="p-4 mb-4 bg-yellow-100 border border-yellow-400 text-black rounded">
                 <p className="font-medium">This team has already submitted their registration.</p>
+                {teamData.submittedBy && teamData.submittedAt && (
+                  <p className="text-sm mt-1">
+                    Submitted by: <span className="font-medium">{teamData.submittedBy}</span> on{" "}
+                    <span className="font-medium">{formatDate(teamData.submittedAt)}</span>
+                  </p>
+                )}
                 <button
                   type="button"
                   className="mt-3 bg-blue-600 text-white px-3 py-1 rounded text-sm"
@@ -214,6 +286,40 @@ export default function StudentDashboard() {
                 >
                   Enter Different Team ID
                 </button>
+              </div>
+            )}
+
+            {/* Add attendance information display */}
+            {teamData.rnd1attstud && teamData.rnd1attstud.markedBy && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-black">
+                <p className="font-medium">Attendance marked by: {teamData.rnd1attstud.markedBy}</p>
+                {teamData.rnd1attstud.markedAt && (
+                  <p className="text-sm">
+                    on {formatDate(teamData.rnd1attstud.markedAt)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Member Selection - Only show if not submitted */}
+            {!teamData.submitted && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
+                <label className="block text-black font-medium mb-2">
+                  Select who you are
+                </label>
+                <select
+                  value={currentMember}
+                  onChange={(e) => setCurrentMember(e.target.value)}
+                  className="w-full p-2 border border-gray-900 rounded text-black"
+                  required
+                >
+                  <option value="">-- Select your name --</option>
+                  {getMemberOptions().map((member) => (
+                    <option key={member.id} value={member.name}>
+                      {member.name} ({member.enrollment})
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -410,7 +516,7 @@ export default function StudentDashboard() {
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700"
-                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !teamData.problemStatement}
+                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !teamData.problemStatement || !currentMember}
                 >
                   {isLoading ? "Submitting..." : "Submit Registration"}
                 </button>

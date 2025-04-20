@@ -21,8 +21,20 @@ const TeamSchema = new mongoose.Schema({
   member4Present: { type: Boolean, default: false },
   problemStatement: String,
   submitted: { type: Boolean, default: false },
+  submittedBy: String,
+  submittedAt: Date,
+  
+  // Add round 1 student attendance field
+  // Make sure your Team model includes this field
+  rnd1attstud: {
+    leader: { type: Boolean, default: false },
+    member2: { type: Boolean, default: false },
+    member3: { type: Boolean, default: false },
+    member4: { type: Boolean, default: false },
+    markedBy: String,
+    markedAt: Date
+  },
 
-  // 🔥 NEW ROUND-SPECIFIC FIELDS
   round1: {
     marks: Number,
     feedback: String,
