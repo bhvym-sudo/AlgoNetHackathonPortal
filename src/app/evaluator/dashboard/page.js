@@ -28,6 +28,21 @@ export default function EvaluatorDashboard() {
         if (!data.round1) {
           data.round1 = { marks: '', feedback: '' };
         }
+        
+        // Set attendance checkboxes from rnd1atteval if available
+        if (data.rnd1atteval) {
+          data.leaderPresent = data.rnd1atteval.leader;
+          data.member2Present = data.rnd1atteval.member2;
+          data.member3Present = data.rnd1atteval.member3;
+          data.member4Present = data.rnd1atteval.member4;
+        } else {
+          // Initialize attendance checkboxes if not available
+          data.leaderPresent = false;
+          data.member2Present = false;
+          data.member3Present = false;
+          data.member4Present = false;
+        }
+        
         setTeamData(data);
       } else {
         setTeamData(null);
@@ -83,132 +98,136 @@ export default function EvaluatorDashboard() {
     setTeamData({ ...teamData, [name]: checked });
   };
 
-  const handleSubmitEvaluation = async (e) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!teamData.round1.marks) {
-      setErrorMessage("Please enter marks for the team");
-      return;
-    }
-    
-    if (!teamData.round1.feedback || !teamData.round1.feedback.trim()) {
-      setErrorMessage("Please provide feedback for the team");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-  
-    try {
-      const evaluationData = {
-        ...teamData,
-        round1: {
-          marks: teamData.round1.marks,
-          feedback: teamData.round1.feedback,
-          evaluatedAt: new Date().toISOString()
-        }
-      };
-  
-      const res = await fetch('/api/team', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(evaluationData),
-      });
-  
-      const result = await res.json();
-      
-      if (result.error) {
-        setErrorMessage(result.error);
-      } else {
-        setSuccessMessage("Round 1 evaluation saved successfully!");
-        resetForm();
-      }
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setErrorMessage("Failed to save evaluation data.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
   const toggleSubmissionStatus = async () => {
-    // Set loading state
+    if (!teamData) return;
+    
     setIsSubmitting(true);
-    setErrorMessage('');
-    setSuccessMessage('');
     
-    // Update locally first for immediate feedback
-    const updatedData = {
-      ...teamData,
-      submitted: !teamData.submitted
-    };
-    setTeamData(updatedData);
-    
-    // Save to database
     try {
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedData),
+        body: JSON.stringify({
+          ...teamData,
+          submitted: !teamData.submitted,
+        }),
       });
-  
-      const result = await res.json();
       
-      if (result.error) {
-        setErrorMessage(result.error);
-        // Revert back if there was an error
-        setTeamData({...teamData});
+      const data = await res.json();
+      
+      if (data.error) {
+        setErrorMessage(data.error);
       } else {
-        setSuccessMessage(`Team ${updatedData.submitted ? 'locked' : 'unlocked'} successfully!`);
-        // Ensure we have the latest data
-        setTeamData(result.team || updatedData);
+        setSuccessMessage(`Team submission status ${teamData.submitted ? 'unlocked' : 'locked'} successfully`);
+        setTeamData(data.team);
       }
     } catch (err) {
-      console.error("Status toggle failed:", err);
-      setErrorMessage("Failed to update submission status.");
-      // Revert back on error
-      setTeamData({...teamData});
+      console.error("Failed to update submission status", err);
+      setErrorMessage("Failed to update submission status");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setTeamId('');
-    setTeamData(null);
+  const handleSubmitEvaluation = async (e) => {
+    e.preventDefault();
+    if (!teamData) return;
+    
+    // Validate required fields
+    if (!teamData.round1?.marks) {
+      setErrorMessage("Please enter marks");
+      return;
+    }
+    
+    if (!teamData.round1?.feedback?.trim()) {
+      setErrorMessage("Please enter feedback");
+      return;
+    }
+    
+    setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
-    setIsLoading(false);
-    setIsSubmitting(false);
     
-    // Show prompt to enter new team ID
-    setTimeout(() => {
-      alert("Evaluation submitted successfully! Please enter the next Team ID.");
-    }, 500);
-  };
-
-  // Helper function to check if a member has data
-  const hasMemberData = (name, enrollment) => {
-    return (name && name.trim() !== '') || (enrollment && enrollment.trim() !== '');
-  };
-
-  // Get the round1 marks and feedback
-  const getRound1Data = () => {
-    if (!teamData || !teamData.round1) {
-      return { marks: '', feedback: '' };
+    try {
+      // Save attendance and marks in one request
+      const attendanceRes = await fetch('/api/team', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId: teamData.teamId,
+          leaderName: teamData.leaderName,
+          leaderEnrollment: teamData.leaderEnrollment,
+          leaderMobile: teamData.leaderMobile,
+          
+          member2Name: teamData.member2Name,
+          member2Enrollment: teamData.member2Enrollment,
+          
+          member3Name: teamData.member3Name,
+          member3Enrollment: teamData.member3Enrollment,
+          
+          member4Name: teamData.member4Name,
+          member4Enrollment: teamData.member4Enrollment,
+          
+          problemStatement: teamData.problemStatement,
+          submitted: teamData.submitted,
+          
+          // Attendance by evaluator (send as top-level fields)
+          leaderPresent: teamData.leaderPresent || false,
+          member2Present: teamData.member2Present || false,
+          member3Present: teamData.member3Present || false,
+          member4Present: teamData.member4Present || false,
+          
+          // Save marks in rnd1marks (top-level)
+          rnd1marks: Number(teamData.round1.marks),
+          isEvaluator: true, // Flag to identify this is from evaluator
+          evaluatorName: "Evaluator"
+        }),
+      });
+      
+      const attendanceData = await attendanceRes.json();
+      
+      if (attendanceData.error) {
+        setErrorMessage(attendanceData.error);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Then submit the evaluation
+      const evalRes = await fetch('/api/evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId: teamData.teamId,
+          marks: teamData.round1.marks,
+          feedback: teamData.round1.feedback,
+        }),
+      });
+      
+      const evalData = await evalRes.json();
+      
+      if (evalData.error) {
+        setErrorMessage(evalData.error);
+      } else {
+        setSuccessMessage("Attendance and evaluation submitted successfully");
+        // Refresh the whole website after submitting
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Failed to submit evaluation and attendance", err);
+      setErrorMessage("Failed to submit evaluation and attendance");
+    } finally {
+      setIsSubmitting(false);
     }
-    return {
-      marks: teamData.round1.marks || '',
-      feedback: teamData.round1.feedback || ''
-    };
   };
-
-  const { marks, feedback } = getRound1Data();
-
+  
+  // Remove the saveAttendance function since we're now handling it in handleSubmitEvaluation
+  
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Evaluator Dashboard</h1>
@@ -248,6 +267,7 @@ export default function EvaluatorDashboard() {
             </button>
           </div>
           {errorMessage && <p className="text-red-500 mt-1">{errorMessage}</p>}
+          {successMessage && <p className="text-green-500 mt-1">{successMessage}</p>}
         </div>
 
         {teamData && (
@@ -268,6 +288,18 @@ export default function EvaluatorDashboard() {
                 </button>
               </div>
             </div>
+            
+            {/* Display previous attendance if available */}
+            {teamData.rnd1atteval && teamData.rnd1atteval.markedBy && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-700">
+                  Attendance previously marked by: <strong>{teamData.rnd1atteval.markedBy}</strong>
+                  {teamData.rnd1atteval.markedAt && (
+                    <span> on {new Date(teamData.rnd1atteval.markedAt).toLocaleString()}</span>
+                  )}
+                </p>
+              </div>
+            )}
             
             {/* Team Leader Section - Always shown as team leader is required */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
@@ -313,8 +345,8 @@ export default function EvaluatorDashboard() {
               </div>
             </div>
 
-            {/* Member 2 Section - Conditionally rendered */}
-            {hasMemberData(teamData.member2Name, teamData.member2Enrollment) && (
+            {/* Member 2 Section */}
+            {teamData.member2Name && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 2</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,7 +360,7 @@ export default function EvaluatorDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Member Enrollment ID
+                      Enrollment ID
                     </label>
                     <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member2Enrollment || ''}
@@ -350,9 +382,8 @@ export default function EvaluatorDashboard() {
                 </div>
               </div>
             )}
-
-            {/* Member 3 Section - Conditionally rendered */}
-            {hasMemberData(teamData.member3Name, teamData.member3Enrollment) && (
+            {/* Member 3 Section */}
+            {teamData.member3Name && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 3</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,7 +397,7 @@ export default function EvaluatorDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Member Enrollment ID
+                      Enrollment ID
                     </label>
                     <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member3Enrollment || ''}
@@ -388,9 +419,8 @@ export default function EvaluatorDashboard() {
                 </div>
               </div>
             )}
-
-            {/* Member 4 Section - Conditionally rendered */}
-            {hasMemberData(teamData.member4Name, teamData.member4Enrollment) && (
+            {/* Member 4 Section */}
+            {teamData.member4Name && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 4</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -404,7 +434,7 @@ export default function EvaluatorDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Member Enrollment ID
+                      Enrollment ID
                     </label>
                     <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       {teamData.member4Enrollment || ''}
@@ -427,32 +457,9 @@ export default function EvaluatorDashboard() {
               </div>
             )}
 
-            {/* Problem Statement */}
-            <div className="mb-6">
-              <label className="block text-gray-700 font-medium mb-2">
-                Problem Statement
-              </label>
-              <label
-                className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >{teamData.problemStatement || ''}</label>
-            </div>
-
-            {/* Round 1 Label */}
-            <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Round 1 Evaluation</h3>
-            </div>
-
-            {/* Evaluation Status */}
-            {teamData.round1?.evaluatedAt && (
-              <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded">
-                <p className="text-sm text-blue-700">
-                  Round 1 was evaluated on {new Date(teamData.round1.evaluatedAt).toLocaleString()}
-                </p>
-              </div>
-            )}
-
             {/* Evaluation Section */}
-            <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">              
+            <div className="mb-6 p-4 bg-gray-50 rounded">
+              <h3 className="font-medium mb-3 text-gray-800">Evaluation</h3>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Marks (0-20) <span className="text-red-500">*</span>
@@ -460,62 +467,36 @@ export default function EvaluatorDashboard() {
                 <input
                   type="number"
                   name="marks"
+                  value={teamData.round1?.marks || ''}
+                  onChange={handleInputChange}
                   min="0"
                   max="20"
-                  value={marks}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
+                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
-              <div>
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Feedback <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="feedback"
-                  value={feedback}
+                  value={teamData.round1?.feedback || ''}
                   onChange={handleInputChange}
                   rows="4"
-                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Provide feedback for the team..."
                   required
+                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 ></textarea>
               </div>
             </div>
 
-            {successMessage && (
-              <div className="p-3 mb-4 bg-green-50 border border-green-300 text-green-700 rounded">
-                {successMessage}
-              </div>
-            )}
-
-            <div className="flex gap-3">
+            <div className="flex justify-end">
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <span className="relative flex h-5 w-5 mr-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-5 w-5 border-2 border-t-transparent border-white animate-spin"></span>
-                    </span>
-                    Saving...
-                  </span>
-                ) : (
-                  "Save Round 1 Evaluation"
-                )}
-              </button>
-              
-              <button
-                type="button"
-                onClick={resetForm}
-                className="bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                Cancel
+                {isSubmitting ? 'Submitting...' : 'Submit Attendance & Evaluation'}
               </button>
             </div>
           </form>
@@ -523,4 +504,5 @@ export default function EvaluatorDashboard() {
       </div>
     </div>
   );
+
 }

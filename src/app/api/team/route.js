@@ -43,12 +43,10 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const body = await request.json();
-  
   try {
-    await connectToDB();
+    const body = await request.json();
 
-    const { 
+    const {
       teamId,
       leaderName, leaderEnrollment, leaderMobile, leaderPresent,
       member2Name, member2Enrollment, member2Present,
@@ -58,7 +56,8 @@ export async function POST(request) {
       submittedBy, submittedAt,
       currentMember, // For student attendance
       evaluatorName, // For evaluator attendance
-      isEvaluator = false // Flag to identify if request is from evaluator
+      isEvaluator = false, // Flag to identify if request is from evaluator
+      rnd1marks // <-- NEW: marks from evaluator dashboard
     } = body;
 
     // Find the team by ID
@@ -72,29 +71,29 @@ export async function POST(request) {
     existingTeam.leaderName = leaderName;
     existingTeam.leaderEnrollment = leaderEnrollment;
     existingTeam.leaderMobile = leaderMobile;
-    
+
     existingTeam.member2Name = member2Name;
     existingTeam.member2Enrollment = member2Enrollment;
-    
+
     existingTeam.member3Name = member3Name;
     existingTeam.member3Enrollment = member3Enrollment;
-    
+
     existingTeam.member4Name = member4Name;
     existingTeam.member4Enrollment = member4Enrollment;
-    
+
     existingTeam.problemStatement = problemStatement;
-    
+
     // Only update submission status if it's not from evaluator
     if (!isEvaluator) {
       existingTeam.submitted = submitted;
-      
+
       // Save the submitter information
       if (submitted && submittedBy) {
         existingTeam.submittedBy = submittedBy;
         existingTeam.submittedAt = submittedAt ? new Date(submittedAt) : new Date();
       }
 
-      // Update student attendance
+      // Update student attendance for Round 1
       if (!existingTeam.rnd1attstud) {
         existingTeam.rnd1attstud = {
           leader: false,
@@ -105,7 +104,6 @@ export async function POST(request) {
           markedAt: null
         };
       }
-
       existingTeam.rnd1attstud = {
         leader: leaderPresent || false,
         member2: member2Present || false,
@@ -114,8 +112,39 @@ export async function POST(request) {
         markedBy: currentMember || submittedBy,
         markedAt: new Date()
       };
-    } 
-    // If it's from evaluator, update evaluator attendance
+
+      // Update student attendance for Round 2
+      if (!existingTeam.rnd2attstud) {
+        existingTeam.rnd2attstud = {
+          leader: false,
+          member2: false,
+          member3: false,
+          member4: false,
+          markedBy: null,
+          markedAt: null
+        };
+      }
+      // NEW: Accept direct rnd2attstud object from frontend if provided
+      if (body.rnd2attstud) {
+        existingTeam.rnd2attstud = {
+          ...existingTeam.rnd2attstud,
+          ...body.rnd2attstud,
+          markedBy: body.currentMember2 || body.submittedBy || existingTeam.rnd2attstud.markedBy,
+          markedAt: new Date()
+        };
+      } else {
+        // fallback for legacy fields (if any)
+        existingTeam.rnd2attstud = {
+          leader: body.leaderPresent2 || false,
+          member2: body.member2Present2 || false,
+          member3: body.member3Present2 || false,
+          member4: body.member4Present2 || false,
+          markedBy: body.currentMember2 || body.submittedBy,
+          markedAt: new Date()
+        };
+      }
+    }
+    // If it's from evaluator, update evaluator attendance and marks
     else if (isEvaluator && evaluatorName) {
       if (!existingTeam.rnd1atteval) {
         existingTeam.rnd1atteval = {
@@ -136,14 +165,16 @@ export async function POST(request) {
         markedBy: evaluatorName,
         markedAt: new Date()
       };
+
+      // Save marks from evaluator dashboard
+      if (typeof rnd1marks === "number" && !isNaN(rnd1marks)) {
+        existingTeam.rnd1marks = rnd1marks;
+      }
     }
 
     await existingTeam.save();
 
-    return Response.json({ 
-      message: "Team updated successfully", 
-      team: existingTeam 
-    });
+    return Response.json({ message: "Team updated successfully", team: existingTeam });
   } catch (error) {
     console.error("Error updating team:", error);
     return Response.json({ error: "Failed to update team" }, { status: 500 });

@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
+// Add these imports
+import { connectToDB } from '@/lib/mongodb';
+import Team from '@/models/Team';
+
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { teamId, uploadedFiles } = data;
+    const { teamId, uploadedFiles, rnd2attstud } = data;
 
     if (!teamId) {
       return NextResponse.json(
@@ -21,6 +25,26 @@ export async function POST(request) {
       );
     }
 
+    // Update attendance in the database if provided
+    await connectToDB();
+    const team = await Team.findOne({ teamId });
+    if (!team) {
+      return NextResponse.json(
+        { error: "Team not found" },
+        { status: 404 }
+      );
+    }
+
+    // Always update attendance on submission (use defaults if not provided)
+    team.rnd2attstud = {
+      leader: rnd2attstud?.leader ?? team.rnd2attstud?.leader ?? false,
+      member2: rnd2attstud?.member2 ?? team.rnd2attstud?.member2 ?? false,
+      member3: rnd2attstud?.member3 ?? team.rnd2attstud?.member3 ?? false,
+      member4: rnd2attstud?.member4 ?? team.rnd2attstud?.member4 ?? false,
+      markedBy: rnd2attstud?.markedBy ?? team.rnd2attstud?.markedBy ?? null,
+      markedAt: new Date()
+    };
+    await team.save();
     // Here you would typically update a database to mark the project as submitted
     // For this example, we'll just create a submission record file
 
@@ -43,9 +67,9 @@ export async function POST(request) {
       submissionPath, 
       JSON.stringify(submissionData, null, 2)
     );
-    
+
     console.log(`Project submission recorded at: ${submissionPath}`);
-    
+
     return NextResponse.json({
       success: true,
       message: "Project submitted successfully",

@@ -11,6 +11,10 @@ export default function RoundTwoHackathon() {
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [leaderPresent2, setLeaderPresent2] = useState(false);
+  const [member2Present2, setMember2Present2] = useState(false);
+  const [member3Present2, setMember3Present2] = useState(false);
+  const [member4Present2, setMember4Present2] = useState(false);
 
   const loadTeamData = async () => {
     if (!teamId.trim()) {
@@ -28,6 +32,18 @@ export default function RoundTwoHackathon() {
       
       if (data && data.teamId) {
         setTeamData(data);
+        // Set round 2 attendance checkboxes if available
+        if (data.rnd2attstud) {
+          setLeaderPresent2(data.rnd2attstud.leader || false);
+          setMember2Present2(data.rnd2attstud.member2 || false);
+          setMember3Present2(data.rnd2attstud.member3 || false);
+          setMember4Present2(data.rnd2attstud.member4 || false);
+        } else {
+          setLeaderPresent2(false);
+          setMember2Present2(false);
+          setMember3Present2(false);
+          setMember4Present2(false);
+        }
       } else {
         setTeamData(null);
         setErrorMessage("Team not found");
@@ -152,14 +168,66 @@ export default function RoundTwoHackathon() {
     setSuccessMessage('');
 
     try {
+      // Build the attendance object from checkbox state
+      const rnd2attstud = {
+        leader: leaderPresent2,
+        member2: member2Present2,
+        member3: member3Present2,
+        member4: member4Present2,
+        markedBy: teamData.leaderName || teamData.teamName || "Unknown"
+      };
+
+      // Prepare the uploaded file names (adjust if you use a different upload flow)
+      const uploadedFiles = uploadFiles.map(file => file.name);
+
       const res = await fetch('/api/submit-project', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId: teamData.teamId,
-          uploadedFiles: uploadFiles.map(file => file.name)
+          uploadedFiles,
+          rnd2attstud
+        })
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        setSuccessMessage("Project submitted and attendance marked!");
+        // Refresh the page after successful submission
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        setErrorMessage(result.error || "Submission failed");
+      }
+    } catch (err) {
+      setErrorMessage("Submission failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update handleSubmit to include round 2 attendance
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId: teamData.teamId,
+          uploadedFiles: uploadFiles.map(file => file.name),
+          rnd2attstud: {
+            leader: leaderPresent2,
+            member2: member2Present2,
+            member3: member3Present2,
+            member4: member4Present2
+          }
         }),
       });
 
@@ -244,7 +312,19 @@ export default function RoundTwoHackathon() {
             {/* Team Leader Section - Always shown as team leader is required */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
               <h3 className="font-medium mb-3 text-gray-800">Team Leader</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="leaderPresent2"
+                    checked={leaderPresent2}
+                    onChange={(e) => setLeaderPresent2(e.target.checked)}
+                    className="h-5 w-5 text-blue-600 border-gray-300 rounded mr-2"
+                  />
+                  <label htmlFor="leaderPresent2" className="text-sm font-medium text-gray-700">
+                    Present (Round 2)
+                  </label>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Team Leader name
@@ -269,11 +349,6 @@ export default function RoundTwoHackathon() {
                     {teamData.leaderMobile || ''}
                   </label>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Present: {teamData.leaderPresent ? 'Yes' : 'No'}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -281,7 +356,19 @@ export default function RoundTwoHackathon() {
             {hasMemberData(teamData.member2Name, teamData.member2Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 2</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member2Present2"
+                      checked={member2Present2}
+                      onChange={(e) => setMember2Present2(e.target.checked)}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded mr-2"
+                    />
+                    <label htmlFor="member2Present2" className="text-sm font-medium text-gray-700">
+                      Present (Round 2)
+                    </label>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
@@ -298,11 +385,6 @@ export default function RoundTwoHackathon() {
                       {teamData.member2Enrollment || ''}
                     </label>
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      Present: {teamData.member2Present ? 'Yes' : 'No'}
-                    </span>
-                  </div>
                 </div>
               </div>
             )}
@@ -311,7 +393,19 @@ export default function RoundTwoHackathon() {
             {hasMemberData(teamData.member3Name, teamData.member3Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 3</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member3Present2"
+                      checked={member3Present2}
+                      onChange={(e) => setMember3Present2(e.target.checked)}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded mr-2"
+                    />
+                    <label htmlFor="member3Present2" className="text-sm font-medium text-gray-700">
+                      Present (Round 2)
+                    </label>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
@@ -328,11 +422,6 @@ export default function RoundTwoHackathon() {
                       {teamData.member3Enrollment || ''}
                     </label>
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      Present: {teamData.member3Present ? 'Yes' : 'No'}
-                    </span>
-                  </div>
                 </div>
               </div>
             )}
@@ -341,7 +430,19 @@ export default function RoundTwoHackathon() {
             {hasMemberData(teamData.member4Name, teamData.member4Enrollment) && (
               <div className="mb-6 p-4 bg-gray-50 rounded">
                 <h3 className="font-medium mb-3 text-gray-800">Team Member 4</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="member4Present2"
+                      checked={member4Present2}
+                      onChange={(e) => setMember4Present2(e.target.checked)}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded mr-2"
+                    />
+                    <label htmlFor="member4Present2" className="text-sm font-medium text-gray-700">
+                      Present (Round 2)
+                    </label>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Member Name
@@ -357,11 +458,6 @@ export default function RoundTwoHackathon() {
                     <label className="block w-full p-2 border border-gray-300 rounded text-gray-800 bg-white">
                       {teamData.member4Enrollment || ''}
                     </label>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      Present: {teamData.member4Present ? 'Yes' : 'No'}
-                    </span>
                   </div>
                 </div>
               </div>
