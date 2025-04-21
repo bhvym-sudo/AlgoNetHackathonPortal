@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function EvaluatorDashboard() {
   const [teamId, setTeamId] = useState('');
@@ -11,6 +11,17 @@ export default function EvaluatorDashboard() {
   const [teamFiles, setTeamFiles] = useState([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
+  // Define rnd2atteval state
+  const [rnd2atteval, setRnd2Atteval] = useState({
+    leader: false,
+    member2: false,
+    member3: false,
+    member4: false,
+  });
+
+  // Define rnd2marks state
+  const [rnd2marks, setRnd2Marks] = useState('');
+
   const loadTeamData = async () => {
     if (!teamId.trim()) {
       setErrorMessage("Please enter a Team ID");
@@ -21,6 +32,7 @@ export default function EvaluatorDashboard() {
     setErrorMessage('');
     setSuccessMessage('');
     
+    // In loadTeamData function, add marks initialization:
     try {
       const res = await fetch(`/api/team?teamId=${teamId}`);
       const data = await res.json();
@@ -30,6 +42,20 @@ export default function EvaluatorDashboard() {
           data.round2 = { marks: '', feedback: '' };
         }
         setTeamData(data);
+        setRnd2Marks(data.round2.marks?.toString() || ''); // Add this line
+        
+        // Initialize rnd2atteval after setting team data
+        if (data.rnd2atteval) {
+          setRnd2Atteval(data.rnd2atteval);
+        } else {
+          setRnd2Atteval({
+            leader: false,
+            member2: false,
+            member3: false,
+            member4: false
+          });
+        }
+        
         await loadTeamFiles(data.teamId);
       } else {
         setTeamData(null);
@@ -62,29 +88,12 @@ export default function EvaluatorDashboard() {
     }
   };
 
+  // Update handleInputChange - remove marks handling:
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'round2.marks') {
-      const marks = parseInt(value);
-      if (isNaN(marks)) {
-        setTeamData({
-          ...teamData,
-          round2: { ...teamData.round2, marks: '' }
-        });
-      } else {
-        const validMarks = Math.min(80, Math.max(0, marks));
-        setTeamData({
-          ...teamData,
-          round2: { ...teamData.round2, marks: validMarks }
-        });
-        
-        if (marks > 80) {
-          setErrorMessage("Maximum marks allowed is 80");
-          setTimeout(() => setErrorMessage(""), 3000);
-        }
-      }
-    } else if (name === 'round2.feedback') {
+    // Remove the 'round2.marks' condition entirely
+    if (name === 'round2.feedback') {
       setTeamData({
         ...teamData,
         round2: { ...teamData.round2, feedback: value }
@@ -105,45 +114,29 @@ export default function EvaluatorDashboard() {
     let isValid = true;
     let validationMessage = '';
 
-    if (!teamData.problemStatement || !teamData.problemStatement.trim()) {
+    if (!teamData.problemStatement?.trim()) {
       isValid = false;
       validationMessage = 'Please enter a problem statement';
     }
     
-    if (teamData.round2?.marks === undefined || teamData.round2?.marks === '') {
+    // Fix: Check rnd2marks state instead of teamData.round2.marks
+    if (!rnd2marks || isNaN(Number(rnd2marks))) {
       isValid = false;
-      validationMessage = validationMessage || 'Please enter marks for Round 2';
+      validationMessage = validationMessage || 'Please enter valid marks for Round 2';
     }
     
-    if (!teamData.leaderPresent) {
+    const isAnyMemberPresent = rnd2atteval.leader || rnd2atteval.member2 || rnd2atteval.member3 || rnd2atteval.member4;
+    if (!isAnyMemberPresent) {
       isValid = false;
-      validationMessage = validationMessage || 'Please mark team leader attendance';
+      validationMessage = validationMessage || 'Please mark attendance for at least one team member';
     }
     
-    if (hasMemberData(teamData.member2Name, teamData.member2Enrollment) && !teamData.member2Present) {
-      isValid = false;
-      validationMessage = validationMessage || 'Please mark all team members attendance';
-    }
-    
-    if (hasMemberData(teamData.member3Name, teamData.member3Enrollment) && !teamData.member3Present) {
-      isValid = false;
-      validationMessage = validationMessage || 'Please mark all team members attendance';
-    }
-    
-    if (hasMemberData(teamData.member4Name, teamData.member4Enrollment) && !teamData.member4Present) {
-      isValid = false;
-      validationMessage = validationMessage || 'Please mark all team members attendance';
-    }
-    
-    if (!teamData.round2?.feedback || !teamData.round2?.feedback.trim()) {
+    if (!teamData.round2?.feedback?.trim()) {
       isValid = false;
       validationMessage = validationMessage || 'Please provide feedback for the team';
     }
 
-    if (!isValid) {
-      setErrorMessage(validationMessage);
-    }
-    
+    if (!isValid) setErrorMessage(validationMessage);
     return isValid;
   };
 
@@ -155,16 +148,18 @@ export default function EvaluatorDashboard() {
     setErrorMessage('');
     setSuccessMessage('');
   
-    try {
-      const evaluationData = {
-        ...teamData,
-        round2: {
-          marks: teamData.round2?.marks || 0,
-          feedback: teamData.round2?.feedback || '',
-          evaluatedAt: new Date().toISOString()
-        }
-      };
+    const evaluationData = {
+      ...teamData,
+      rnd2atteval,
+      rnd2marks: Number(rnd2marks), // Add this line
+      round2: {
+        marks: Number(rnd2marks), // Keep this too if backend expects nested structure
+        feedback: teamData.round2?.feedback || '',
+        evaluatedAt: new Date().toISOString()
+      }
+    };
   
+    try {
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -301,7 +296,7 @@ export default function EvaluatorDashboard() {
               </div>
             </div>
             
-            {/* Team Leader Section */}
+            // Team Leader Section
             <div className="mb-6 p-4 bg-gray-50 rounded">
               <h3 className="font-medium mb-3 text-gray-800">Team Leader</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,13 +324,18 @@ export default function EvaluatorDashboard() {
                     {teamData.leaderMobile || ''}
                   </label>
                 </div>
+                
+                
+        
+                
+                // In team leader checkbox section, remove required attribute:
                 <div className="flex items-center">
                   <input
                     type="checkbox"
                     id="leaderPresent"
                     name="leaderPresent"
-                    checked={teamData.leaderPresent || false}
-                    onChange={handleCheckboxChange}
+                    checked={rnd2atteval.leader}
+                    onChange={e => setRnd2Atteval({ ...rnd2atteval, leader: e.target.checked })}
                     className="h-5 w-5 text-blue-600 border-gray-300 rounded"
                     required
                   />
@@ -372,8 +372,8 @@ export default function EvaluatorDashboard() {
                       type="checkbox"
                       id="member2Present"
                       name="member2Present"
-                      checked={teamData.member2Present || false}
-                      onChange={handleCheckboxChange}
+                      checked={rnd2atteval.member2}
+                      onChange={e => setRnd2Atteval({ ...rnd2atteval, member2: e.target.checked })}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
                       required={hasMemberData(teamData.member2Name, teamData.member2Enrollment)}
                     />
@@ -405,13 +405,14 @@ export default function EvaluatorDashboard() {
                       {teamData.member3Enrollment || ''}
                     </label>
                   </div>
+                  // In member3 checkbox section, update to use rnd2atteval:
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="member3Present"
                       name="member3Present"
-                      checked={teamData.member3Present || false}
-                      onChange={handleCheckboxChange}
+                      checked={rnd2atteval.member3}
+                      onChange={e => setRnd2Atteval({ ...rnd2atteval, member3: e.target.checked })}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
                       required={hasMemberData(teamData.member3Name, teamData.member3Enrollment)}
                     />
@@ -443,13 +444,14 @@ export default function EvaluatorDashboard() {
                       {teamData.member4Enrollment || ''}
                     </label>
                   </div>
+                  // In member4 checkbox section, update to use rnd2atteval:
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="member4Present"
                       name="member4Present"
-                      checked={teamData.member4Present || false}
-                      onChange={handleCheckboxChange}
+                      checked={rnd2atteval.member4}
+                      onChange={e => setRnd2Atteval({ ...rnd2atteval, member4: e.target.checked })}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded"
                       required={hasMemberData(teamData.member4Name, teamData.member4Enrollment)}
                     />
@@ -486,7 +488,7 @@ export default function EvaluatorDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Round 1 Marks
                     </label>
-                    <p className="text-gray-800 font-semibold">{teamData.round1.marks}/20</p>
+                    <p className="text-gray-800 font-semibold">{teamData.rnd1marks}/20</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -500,24 +502,26 @@ export default function EvaluatorDashboard() {
 
             {/* Round 2 Evaluation Section */}
             <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-              <h3 className="font-medium mb-3 text-gray-800">Round 2 Evaluation</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Round 2 Evaluator Attendance</h3>
               
-              <div className="mb-4">
+              // In the Round 2 marks input section:
+              <div className="mb-4 mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Round 2 Marks (0-80) <span className="text-red-500">*</span>
+                  Round 2 Evaluator Marks (0-80)
                 </label>
                 <input
                   type="number"
-                  name="round2.marks"
                   min="0"
                   max="80"
-                  value={teamData.round2?.marks || ''}
-                  onChange={handleInputChange}
+                  value={rnd2marks}
+                  onChange={e => {
+                    const value = Math.min(80, Math.max(0, e.target.valueAsNumber || 0));
+                    setRnd2Marks(value.toString());
+                  }}
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
                   placeholder="Enter marks (0-80)"
+                  required
                 />
-                <p className="text-xs text-gray-500 mt-1">Maximum marks allowed: 80</p>
               </div>
               
               {/* File preview section */}

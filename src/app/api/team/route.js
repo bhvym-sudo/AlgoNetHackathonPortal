@@ -54,6 +54,8 @@ export async function POST(request) {
       member4Name, member4Enrollment, member4Present,
       problemStatement, submitted,
       submittedBy, submittedAt,
+      rnd2atteval, // <-- Ensure this is included
+      rnd2marks, // <-- Ensure this is included
       currentMember, // For student attendance
       evaluatorName, // For evaluator attendance
       isEvaluator = false, // Flag to identify if request is from evaluator
@@ -172,6 +174,23 @@ export async function POST(request) {
       }
     }
 
+    // In your POST handler, after updating other fields:
+    // Handle evaluator round 2 attendance
+    if (body.rnd2atteval) {
+      existingTeam.rnd2atteval = {
+        leader: body.rnd2atteval.leader || false,
+        member2: body.rnd2atteval.member2 || false,
+        member3: body.rnd2atteval.member3 || false,
+        member4: body.rnd2atteval.member4 || false,
+        markedBy: body.evaluatorName || null,
+        markedAt: new Date()
+      };
+    }
+
+    // Handle evaluator round 2 marks
+    if (typeof body.rnd2marks === 'number') {
+      existingTeam.rnd2marks = Math.min(80, Math.max(0, body.rnd2marks));
+    }
     await existingTeam.save();
 
     return Response.json({ message: "Team updated successfully", team: existingTeam });
