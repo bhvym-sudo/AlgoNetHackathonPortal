@@ -114,12 +114,11 @@ export default function NewTeamRegistration() {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch('/api/newteam', {
+      const res = await fetch('/mca/api/newteam', { // <-- changed endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
-
       const data = await res.json();
       if (res.ok) {
         const teamId = data.teamId;

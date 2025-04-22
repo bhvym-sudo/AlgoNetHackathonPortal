@@ -53,7 +53,8 @@ export default function StudentDashboard() {
 
   const loadProblemStatements = async () => {
     try {
-      const res = await fetch('/api/problems');
+
+      const res = await fetch('/mca/api/problems');
       const data = await res.json();
       if (data?.problemStatements) {
         setProblemStatements(data.problemStatements);
@@ -74,7 +75,8 @@ export default function StudentDashboard() {
     setSuccessMessage('');
     
     try {
-      const res = await fetch(`/api/team?teamId=${teamId}`);
+      // Change to absolute path for mca team API
+      const res = await fetch(`/mca/api/team?teamId=${teamId}`);
       const data = await res.json();
       
       if (data?.teamId) {
@@ -93,7 +95,6 @@ export default function StudentDashboard() {
         setTeamData(updatedData);
         setTeamLoaded(true);
         loadProblemStatements();
-        // Reset current member selection when loading team
         setCurrentMember('');
       } else {
         setErrorMessage("Please enter correct team ID");
@@ -130,7 +131,8 @@ export default function StudentDashboard() {
     setSuccessMessage('');
   
     try {
-      const res = await fetch('/api/team', {
+      // Change to absolute path for mca team API
+      const res = await fetch('/mca/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +262,7 @@ export default function StudentDashboard() {
             </div>
             <div className="mt-2 text-center">
               <a 
-                href="/newteam" 
+                href="mca/newteam" 
                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
               >
                 New Team Registration
@@ -480,23 +482,7 @@ export default function StudentDashboard() {
             )}
 
             {/* Problem Statement */}
-            {!teamData.submitted && (
-              <div className="mb-6">
-                <label className="block text-black font-medium mb-2">Problem Statement</label>
-                <select
-                  name="problemStatement"
-                  value={teamData.problemStatement}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-900 rounded text-black"
-                  required
-                >
-                  <option value="">Select a problem statement</option>
-                  {problemStatements.map((ps, index) => (
-                    <option key={index} value={ps.title}>{ps.title}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            
 
             {/* Messages and Buttons */}
             {errorMessage && (
@@ -516,7 +502,7 @@ export default function StudentDashboard() {
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700"
-                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !teamData.problemStatement || !currentMember}
+                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !currentMember}
                 >
                   {isLoading ? "Submitting..." : "Submit Registration"}
                 </button>

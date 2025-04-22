@@ -27,7 +27,7 @@ export default function EvaluatorDashboard() {
             useEffect(() => {
               const loadProblems = async () => {
                 try {
-                  const res = await fetch('/api/problems');
+                  const res = await fetch('/mca/api/problems'); // changed
                   const data = await res.json();
                   setProblems(data.problemStatements || []);
                 } catch (err) {
@@ -48,7 +48,7 @@ export default function EvaluatorDashboard() {
     
     // In loadTeamData function, add marks initialization:
     try {
-      const res = await fetch(`/api/team?teamId=${teamId}`);
+      const res = await fetch(`/mca/api/team?teamId=${teamId}`); // changed
       const data = await res.json();
       
       if (data && data.teamId) {
@@ -87,7 +87,7 @@ export default function EvaluatorDashboard() {
   const loadTeamFiles = async (teamId) => {
     setIsLoadingFiles(true);
     try {
-      const res = await fetch(`/api/files?teamId=${teamId}`);
+      const res = await fetch(`/mca/api/files?teamId=${teamId}`); // changed
       const data = await res.json();
       if (data.files) {
         setTeamFiles(data.files);
@@ -174,7 +174,7 @@ export default function EvaluatorDashboard() {
     };
   
     try {
-      const res = await fetch('/api/team', {
+      const res = await fetch('/mca/api/team', { // changed from '/api/team'
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(evaluationData),
@@ -208,7 +208,7 @@ export default function EvaluatorDashboard() {
     setTeamData(updatedData);
     
     try {
-      const res = await fetch('/api/team', {
+      const res = await fetch('/mca/api/team', { // changed from '/api/team'
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData),
@@ -484,25 +484,7 @@ export default function EvaluatorDashboard() {
             
             
             // In the JSX, keep only the dropdown component:
-            <div className="mb-6">
-              <label className="block text-gray-700 font-medium mb-2">
-                Problem Statement <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="problemStatement"
-                value={teamData?.problemStatement || ''}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select a problem statement</option>
-                {problems.map((problem) => (
-                  <option key={problem._id} value={problem.title}>
-                    {problem.title} - {problem.category}
-                  </option>
-                ))}
-              </select>
-            </div>
+            
 
             {/* Round 1 Evaluation Summary */}
             {teamData.round1 && teamData.round1.marks !== undefined && (
@@ -574,7 +556,7 @@ export default function EvaluatorDashboard() {
                             </span>
                             <div className="flex gap-2">
                               <a 
-                                href={`/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}`}
+                                href={`/mca/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 text-sm"
@@ -582,7 +564,7 @@ export default function EvaluatorDashboard() {
                                 View
                               </a>
                               <a 
-                                href={`/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}&download=true`}
+                                href={`/mca/api/files/download?teamId=${teamData.teamId}&filename=${encodeURIComponent(file.name)}&download=true`}
                                 className="text-green-600 hover:text-green-800 text-sm"
                               >
                                 Download

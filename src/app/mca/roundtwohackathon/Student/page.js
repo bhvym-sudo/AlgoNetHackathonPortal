@@ -27,7 +27,7 @@ export default function RoundTwoHackathon() {
     setSuccessMessage('');
     
     try {
-      const res = await fetch(`/api/team?teamId=${teamId}`);
+      const res = await fetch(`/mca/api/team?teamId=${teamId}`); // changed
       const data = await res.json();
       
       if (data && data.teamId) {
@@ -148,7 +148,7 @@ export default function RoundTwoHackathon() {
         }
       };
 
-      xhr.open('POST', '/api/upload', true);
+      xhr.open('POST', '/mca/api/upload', true);
       xhr.send(formData);
     } catch (err) {
       console.error("Upload failed:", err);
@@ -180,7 +180,7 @@ export default function RoundTwoHackathon() {
       // Prepare the uploaded file names (adjust if you use a different upload flow)
       const uploadedFiles = uploadFiles.map(file => file.name);
 
-      const res = await fetch('/api/submit-project', {
+      const res = await fetch('/mca/api/submit-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -216,7 +216,7 @@ export default function RoundTwoHackathon() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/team', {
+      const res = await fetch('/mca/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

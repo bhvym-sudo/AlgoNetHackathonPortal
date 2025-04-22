@@ -32,7 +32,7 @@ export default function EvaluatorLogin() {
     setError('');
 
     try {
-      const response = await fetch('/api/evaluator/login', {
+      const response = await fetch('/mca/api/evaluator/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export default function EvaluatorLogin() {
 
       if (response.ok) {
         
-        router.push('/evaluator/dashboard');
+        router.push('/mca/evaluator/dashboard');
       } else {
         
         setError(data.message || 'Login failed. Please check your credentials.');

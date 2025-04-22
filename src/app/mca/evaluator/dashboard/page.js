@@ -14,7 +14,7 @@ export default function EvaluatorDashboard() {
   useEffect(() => {
     const loadProblems = async () => {
       try {
-        const res = await fetch('/api/problems');
+        const res = await fetch('/mca/api/problems'); // changed
         const data = await res.json();
         setProblems(data.problemStatements || []);
       } catch (err) {
@@ -35,7 +35,7 @@ export default function EvaluatorDashboard() {
     setSuccessMessage('');
     
     try {
-      const res = await fetch(`/api/team?teamId=${teamId}`);
+      const res = await fetch(`/mca/api/team?teamId=${teamId}`); // changed
       const data = await res.json();
       
       if (data && data.teamId) {
@@ -119,7 +119,7 @@ export default function EvaluatorDashboard() {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch('/api/team', {
+      const res = await fetch('/mca/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export default function EvaluatorDashboard() {
     
     try {
       // Save attendance and marks in one request
-      const attendanceRes = await fetch('/api/team', {
+      const attendanceRes = await fetch('/mca/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ export default function EvaluatorDashboard() {
       }
       
       // Then submit the evaluation
-      const evalRes = await fetch('/api/evaluation', {
+      const evalRes = await fetch('/mca/api/evaluation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -471,37 +471,7 @@ export default function EvaluatorDashboard() {
                 </div>
               </div>
             )}
-            <div className="mb-6">
-              <label className="block text-gray-700 font-medium mb-2">
-                Problem Statement <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="problemStatement"
-                value={teamData?.problemStatement || ''}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  if (teamData?.teamId) {
-                    fetch('/api/team', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        teamId: teamData.teamId,
-                        problemStatement: e.target.value
-                      })
-                    });
-                  }
-                }}
-                className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select a problem statement</option>
-                {problems.map((problem) => (
-                  <option key={problem._id} value={problem.title}>
-                    {problem.title} - {problem.category}
-                  </option>
-                ))}
-              </select>
-            </div>
+            
 
             {/* Evaluation Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
