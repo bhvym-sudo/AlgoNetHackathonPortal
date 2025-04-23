@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 
 export default function NewTeamRegistration() {
   const [form, setForm] = useState({
@@ -18,7 +20,7 @@ export default function NewTeamRegistration() {
     member4Enrollment: '',
     member4Email: '' // Added email field for member 4
   });
-
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [teamId, setTeamId] = useState('');
   const [errors, setErrors] = useState({});
@@ -172,6 +174,12 @@ export default function NewTeamRegistration() {
           
           <button onClick={() => setSubmitted(false)} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded transition duration-150">
             Register Another Team
+          </button>
+          <button onClick={() => {
+        setSubmitted(false);
+        router.push('/mca');
+      }} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded transition duration-150">
+            Back
           </button>
         </div>
       </div>

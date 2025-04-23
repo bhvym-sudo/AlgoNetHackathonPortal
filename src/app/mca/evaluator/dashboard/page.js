@@ -9,12 +9,14 @@ export default function EvaluatorDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [problems, setProblems] = useState([]);
+  const [selectedProblems, setSelectedProblems] = useState([]);
+  const [problemsInitialized, setProblemsInitialized] = useState(false);
 
-  // Add useEffect hook after state declarations
+  // Load problems on mount
   useEffect(() => {
     const loadProblems = async () => {
       try {
-        const res = await fetch('/mca/api/problems'); // changed
+        const res = await fetch('/mca/api/problems');
         const data = await res.json();
         setProblems(data.problemStatements || []);
       } catch (err) {
@@ -22,7 +24,23 @@ export default function EvaluatorDashboard() {
       }
     };
     loadProblems();
-    }, []);
+  }, []);
+
+  // 1. When teamData or problems change, initialize selectedProblems from prblm1, prblm2, ... ONLY ONCE per team load
+  useEffect(() => {
+    if (teamData && problems.length > 0 && !problemsInitialized) {
+      // Collect all prblm1...prblm12 values that are non-empty
+      const selected = [];
+      for (let i = 1; i <= 12; i++) {
+        const key = `prblm${i}`;
+        if (teamData[key]) {
+          selected.push(teamData[key]);
+        }
+      }
+      setSelectedProblems(selected); // selectedProblems is an array of problem texts
+      setProblemsInitialized(true);
+    }
+  }, [teamData, problems, problemsInitialized]);
 
   const loadTeamData = async () => {
     if (!teamId.trim()) {
@@ -35,7 +53,7 @@ export default function EvaluatorDashboard() {
     setSuccessMessage('');
     
     try {
-      const res = await fetch(`/mca/api/team?teamId=${teamId}`); // changed
+      const res = await fetch(`/mca/api/team?teamId=${teamId}`);
       const data = await res.json();
       
       if (data && data.teamId) {
@@ -59,6 +77,7 @@ export default function EvaluatorDashboard() {
         }
         
         setTeamData(data);
+        setProblemsInitialized(false); // <-- ADD THIS LINE to reset when loading a new team
       } else {
         setTeamData(null);
         setErrorMessage("Team not found");
@@ -113,6 +132,16 @@ export default function EvaluatorDashboard() {
     setTeamData({ ...teamData, [name]: checked });
   };
 
+  const handleProblemCheckbox = (key, text) => {
+    setSelectedProblems(prev => {
+      if (prev.find(p => p.key === key)) {
+        return prev.filter(p => p.key !== key);
+      } else {
+        return [...prev, { key, text }];
+      }
+    });
+  };
+
   const toggleSubmissionStatus = async () => {
     if (!teamData) return;
     
@@ -149,6 +178,12 @@ export default function EvaluatorDashboard() {
   const handleSubmitEvaluation = async (e) => {
     e.preventDefault();
     if (!teamData) return;
+
+    // Validate at least 3 problems selected
+    if (selectedProblems.length < 3) {
+      setErrorMessage("Please select at least 3 problems.");
+      return;
+    }
     
     // Validate required fields
     if (!teamData.round1?.marks) {
@@ -166,7 +201,22 @@ export default function EvaluatorDashboard() {
     setSuccessMessage('');
     
     try {
-      // Save attendance and marks in one request
+      // --- Map selected problems to their original prblmX fields ---
+      const problemsForBackend = {};
+      // First, clear all prblm1...prblm12
+      for (let i = 1; i <= 12; i++) {
+        problemsForBackend[`prblm${i}`] = '';
+      }
+      // Now, for each selected problem, find its index in the problems array and set the correct prblmX
+      selectedProblems.forEach(selectedText => {
+        const idx = problems.findIndex(p => p.text === selectedText);
+        if (idx !== -1) {
+          problemsForBackend[`prblm${idx + 1}`] = selectedText;
+        }
+      });
+      // --- End mapping block ---
+
+      // Save attendance, marks, and problems in one request
       const attendanceRes = await fetch('/mca/api/team', {
         method: 'POST',
         headers: {
@@ -199,10 +249,11 @@ export default function EvaluatorDashboard() {
           // Save marks in rnd1marks (top-level)
           rnd1marks: Number(teamData.round1.marks),
           isEvaluator: true, // Flag to identify this is from evaluator
-          evaluatorName: "Evaluator"
+          evaluatorName: "Evaluator",
+          ...problemsForBackend // <-- Always send all prblm fields
         }),
       });
-      
+
       const attendanceData = await attendanceRes.json();
       
       if (attendanceData.error) {
@@ -221,16 +272,18 @@ export default function EvaluatorDashboard() {
           teamId: teamData.teamId,
           marks: teamData.round1.marks,
           feedback: teamData.round1.feedback,
+          ...problemsForBackend // <-- Always send all prblm fields
         }),
       });
-      
+
       const evalData = await evalRes.json();
       
       if (evalData.error) {
         setErrorMessage(evalData.error);
       } else {
-        setSuccessMessage("Attendance and evaluation submitted successfully");
+        setSuccessMessage("Attendance, problems, and evaluation submitted successfully");
         // Refresh the whole website after submitting
+        alert("Evaluation submitted successfully. Refreshing the page...");
         window.location.reload();
       }
     } catch (err) {
@@ -241,11 +294,9 @@ export default function EvaluatorDashboard() {
     }
   };
   
-  // Remove the saveAttendance function since we're now handling it in handleSubmitEvaluation
-  
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Evaluator Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - MCA round 1 Evaluator Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-6">
@@ -472,6 +523,48 @@ export default function EvaluatorDashboard() {
               </div>
             )}
             
+            {/* Problem Selection Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded">
+              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 3)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {problems.map((problem, idx) => {
+                  // Check if this problem's text is in selectedProblems
+                  const isChecked = selectedProblems.includes(problem.text);
+                  return (
+                    <label key={problem.key ?? problem.text ?? idx} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSelectedProblems(prev => {
+                            if (prev.includes(problem.text)) {
+                              return prev.filter(text => text !== problem.text);
+                            } else {
+                              return [...prev, problem.text];
+                            }
+                          });
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-black">{problem.text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {(selectedProblems || []).length > 0 && (
+                <div className="mt-3 text-sm text-blue-600">
+                  Selected ({selectedProblems.length}): {selectedProblems.length <= 3 ?
+                    selectedProblems.join(', ') :
+                    `${selectedProblems.length} problems selected`
+                  }
+                </div>
+              )}
+              {(selectedProblems || []).length < 3 && (
+                <div className="mt-1 text-sm text-amber-600">
+                  Please select at least 3 problems
+                </div>
+              )}
+            </div>
 
             {/* Evaluation Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
@@ -519,6 +612,6 @@ export default function EvaluatorDashboard() {
         )}
       </div>
     </div>
-  );
+  );}
 
-}
+  

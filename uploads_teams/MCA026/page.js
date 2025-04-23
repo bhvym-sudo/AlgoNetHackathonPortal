@@ -172,19 +172,19 @@ export default function EvaluatorDashboard() {
   
     // Build prblm1 ... prblm12 fields for backend
     const problemsForBackend = {};
-    // Clear all prblm1...prblm12 first
-    for (let i = 1; i <= 12; i++) {
-      problemsForBackend[`prblm${i}`] = '';
-    }
-    // For each selected problem, set the correct prblmX slot
     if (Array.isArray(teamData.selectedProblems)) {
-      teamData.selectedProblems.forEach((p) => {
-        // Find the index of this problem in the problems array
-        const idx = problems.findIndex(prob => prob.key === p.key);
-        if (idx !== -1) {
-          problemsForBackend[`prblm${idx + 1}`] = p.text;
-        }
+      teamData.selectedProblems.forEach((p, idx) => {
+        problemsForBackend[`prblm${idx + 1}`] = p.text;
       });
+      // Clear any extra prblm fields if fewer than before
+      for (let i = teamData.selectedProblems.length + 1; i <= 12; i++) {
+        problemsForBackend[`prblm${i}`] = '';
+      }
+    } else {
+      // If none selected, clear all
+      for (let i = 1; i <= 12; i++) {
+        problemsForBackend[`prblm${i}`] = '';
+      }
     }
   
     const evaluationData = {

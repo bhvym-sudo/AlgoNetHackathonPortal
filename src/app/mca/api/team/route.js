@@ -62,6 +62,8 @@ export async function POST(request) {
       rnd1marks
     } = body;
 
+    const { selectedProblems } = body; // <-- Add this
+
     await connectToDB();
     const existingTeam = await MCATeam.findOne({ teamId });
 
@@ -179,6 +181,23 @@ export async function POST(request) {
 
     if (typeof rnd2marks === 'number') {
       existingTeam.rnd2marks = Math.min(80, Math.max(0, rnd2marks));
+    }
+
+    // Save selected problems
+    if (Array.isArray(selectedProblems)) {
+      for (const prblm of selectedProblems) {
+        if (prblm.key && prblm.text) {
+          existingTeam[prblm.key] = prblm.text;
+        }
+      }
+    }
+
+    // Overwrite all prblm1 ... prblm12 fields, even if empty
+    for (let i = 1; i <= 12; i++) {
+      const key = `prblm${i}`;
+      if (body.hasOwnProperty(key)) {
+        existingTeam[key] = body[key];
+      }
     }
 
     await existingTeam.save();

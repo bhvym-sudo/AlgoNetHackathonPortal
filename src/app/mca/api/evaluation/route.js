@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     await connectToDB();
 
-    const { teamId, marks, feedback } = body;
+    const { teamId, marks, feedback, ...rest } = body;
 
     if (!teamId) {
       return Response.json({ error: "Team ID is required" }, { status: 400 });
@@ -29,6 +29,16 @@ export async function POST(request) {
 
     team.marks = marks;
     team.feedback = feedback || "";
+
+    // --- ADD THIS BLOCK: Save prblm1, prblm2, ... if present ---
+    for (let i = 1; i <= 12; i++) {
+      const key = `prblm${i}`;
+      if (rest[key] !== undefined) {
+        team[key] = rest[key];
+      }
+    }
+    // --- END BLOCK ---
+
     await team.save();
 
     return Response.json({ 

@@ -15,6 +15,8 @@ export default function RoundTwoHackathon() {
   const [member2Present2, setMember2Present2] = useState(false);
   const [member3Present2, setMember3Present2] = useState(false);
   const [member4Present2, setMember4Present2] = useState(false);
+  const [problems, setProblems] = useState([]);
+  const [selectedProblems, setSelectedProblems] = useState([]);
 
   const loadTeamData = async () => {
     if (!teamId.trim()) {
@@ -157,18 +159,49 @@ export default function RoundTwoHackathon() {
     }
   };
 
+  // Load problems from API on mount
+  useEffect(() => {
+    const loadProblems = async () => {
+      try {
+        const res = await fetch('/mca/api/problems');
+        const data = await res.json();
+        setProblems(data.problemStatements || []);
+      } catch (err) {
+        // handle error if needed
+      }
+    };
+    loadProblems();
+  }, []);
+  
+  // Populate selectedProblems from teamData when teamData or problems change
+  useEffect(() => {
+    if (teamData && problems.length > 0) {
+      const selected = [];
+      for (let i = 1; i <= 12; i++) {
+        const key = `prblm${i}`;
+        if (teamData[key]) {
+          selected.push({ key, text: teamData[key] });
+        }
+      }
+      setSelectedProblems(selected);
+    }
+  }, [teamData, problems]);
+
   const handleSubmitForm = async () => {
     if (!teamData?.teamId) {
       setErrorMessage("Please load team data first");
       return;
     }
-
+    if (selectedProblems.length < 3) {
+      setErrorMessage("Please select at least 3 problems");
+      return;
+    }
+  
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
-
+  
     try {
-      // Build the attendance object from checkbox state
       const rnd2attstud = {
         leader: leaderPresent2,
         member2: member2Present2,
@@ -176,28 +209,26 @@ export default function RoundTwoHackathon() {
         member4: member4Present2,
         markedBy: teamData.leaderName || teamData.teamName || "Unknown"
       };
-
-      // Prepare the uploaded file names (adjust if you use a different upload flow)
       const uploadedFiles = uploadFiles.map(file => file.name);
-
+  
       const res = await fetch('/mca/api/submit-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId: teamData.teamId,
           uploadedFiles,
-          rnd2attstud
+          rnd2attstud,
+          selectedProblems // <-- send selected problems
         })
       });
-
+  
       const result = await res.json();
-
+  
       if (result.success) {
         setSuccessMessage("Project submitted and attendance marked!");
         // Refresh the page after successful submission
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        alert("Your project has been submitted successfully! please proceed to your room for evaluation");
+        window.location.reload();
       } else {
         setErrorMessage(result.error || "Submission failed");
       }
@@ -214,7 +245,7 @@ export default function RoundTwoHackathon() {
     setErrorMessage('');
     setSuccessMessage('');
     setIsSubmitting(true);
-
+  
     try {
       const res = await fetch('/mca/api/team', {
         method: 'POST',
@@ -227,17 +258,18 @@ export default function RoundTwoHackathon() {
             member2: member2Present2,
             member3: member3Present2,
             member4: member4Present2
-          }
+          },
+          selectedProblems // <-- send selected problems
         }),
       });
-
+  
       const result = await res.json();
       
       if (result.error) {
         setErrorMessage(result.error);
       } else {
         // Display success message
-        alert("Your project has been submitted successfully!");
+        alert("Your project has been submitted successfully! please proceed to your room for evaluation");
         
         // Reset the form
         setUploadFiles([]);
@@ -258,7 +290,7 @@ export default function RoundTwoHackathon() {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Round Two Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - MCA Round Two Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-6">
@@ -463,6 +495,47 @@ export default function RoundTwoHackathon() {
               </div>
             )}
 
+            {/* Problem Selection Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded">
+              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 3)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {problems.map((problem, idx) => (
+                  <label key={problem.key || idx} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedProblems.find(p => p.key === problem.key)}
+                      // REMOVE disabled={teamData.submitted}
+                      onChange={() => {
+                        if (teamData.submitted) return;
+                        setSelectedProblems(prev => {
+                          if (prev.find(p => p.key === problem.key)) {
+                            return prev.filter(p => p.key !== problem.key);
+                          } else {
+                            return [...prev, { key: problem.key, text: problem.text }];
+                          }
+                        });
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-black">{problem.text}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedProblems.length > 0 && (
+                <div className="mt-3 text-sm text-blue-600">
+                  Selected ({selectedProblems.length}): {selectedProblems.length <= 3 ?
+                    selectedProblems.map(p => p.text).join(', ') :
+                    `${selectedProblems.length} problems selected`
+                  }
+                </div>
+              )}
+              {selectedProblems.length < 3 && (
+                <div className="mt-1 text-sm text-amber-600">
+                  Please select at least 3 problems
+                </div>
+              )}
+            </div>
+
             {/* Multiple File Upload Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
               <h3 className="font-medium mb-3 text-gray-800">Project Submission</h3>
@@ -544,7 +617,6 @@ export default function RoundTwoHackathon() {
       </div>
     </div>
   );
+
 }
-
-
 
