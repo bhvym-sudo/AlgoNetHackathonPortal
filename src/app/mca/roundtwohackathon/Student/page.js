@@ -192,8 +192,8 @@ export default function RoundTwoHackathon() {
       setErrorMessage("Please load team data first");
       return;
     }
-    if (selectedProblems.length < 3) {
-      setErrorMessage("Please select at least 3 problems");
+    if (selectedProblems.length < 1) {
+      setErrorMessage("Please select at least 1 problems");
       return;
     }
   
@@ -498,7 +498,7 @@ export default function RoundTwoHackathon() {
 
             {/* Problem Selection Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 3)</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Problems (min 1)</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {problems.map((problem, idx) => (
                   <label key={problem.key || idx} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
@@ -530,9 +530,9 @@ export default function RoundTwoHackathon() {
                   }
                 </div>
               )}
-              {selectedProblems.length < 3 && (
+              {selectedProblems.length < 1 && (
                 <div className="mt-1 text-sm text-amber-600">
-                  Please select at least 3 problems
+                  Please select at least 1 problems
                 </div>
               )}
             </div>

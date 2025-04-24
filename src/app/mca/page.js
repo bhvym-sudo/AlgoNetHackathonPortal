@@ -144,9 +144,9 @@ export default function StudentDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate at least 3 problems selected
-    if (selectedProblems.length < 3) {
-      setErrorMessage("Please select at least 3 problems.");
+
+    if (selectedProblems.length < 1) {
+      setErrorMessage("Please select at least 1 problems.");
       return;
     }
   
@@ -530,7 +530,7 @@ export default function StudentDashboard() {
             {/* Problem Statement Section */}
             {teamLoaded && (
               <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-3 text-black">Select Your Problems (min 3)</h2>
+                <h2 className="text-lg font-semibold mb-3 text-black">Select Your Problems (min 1)</h2>
                 <div className="grid grid-cols-3 gap-4">
                   {problemStatements.map((prblm, idx) => (
                     <label key={prblm.key} className="flex items-center space-x-2 bg-gray-50 p-2 rounded">

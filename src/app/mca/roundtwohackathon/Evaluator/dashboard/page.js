@@ -147,16 +147,13 @@ export default function EvaluatorDashboard() {
       rnd2marks === '' ||
       isNaN(marksNum) ||
       marksNum < 0 ||
-      marksNum > 80
+      marksNum > 10
     ) {
       isValid = false;
-      validationMessage = validationMessage || 'Please enter valid marks for Round 2 (0-80)';
+      validationMessage = validationMessage || 'Please enter valid marks for Evaluation (0-10)';
     }
 
-    if (!teamData.round2?.feedback?.trim()) {
-      isValid = false;
-      validationMessage = validationMessage || 'Please provide feedback for the team';
-    }
+
 
     if (!isValid) setErrorMessage(validationMessage);
     return isValid;
@@ -506,7 +503,7 @@ export default function EvaluatorDashboard() {
 
  
             <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 3)</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 1)</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {problems.map((problem, idx) => (
                   <label key={problem.key || idx} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
@@ -537,9 +534,9 @@ export default function EvaluatorDashboard() {
                   }
                 </div>
               )}
-              {(teamData.selectedProblems || []).length < 3 && (
+              {(teamData.selectedProblems || []).length < 1 && (
                 <div className="mt-1 text-sm text-amber-600">
-                  Please select at least 3 problems
+                  Please select at least 1 problems
                 </div>
               )}
             </div>
@@ -549,26 +546,7 @@ export default function EvaluatorDashboard() {
             
             
 
-            {/* Round 1 Evaluation Summary */}
-            {teamData.round1 && teamData.round1.marks !== undefined && (
-              <div className="mb-6 p-4 bg-yellow-50 rounded border border-yellow-200">
-                <h3 className="font-medium mb-3 text-gray-800">Round 1 Evaluation Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Round 1 Marks
-                    </label>
-                    <p className="text-gray-800 font-semibold">{teamData.rnd1marks}/20</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Round 1 Feedback
-                    </label>
-                    <p className="text-gray-700">{teamData.round1.feedback || 'No feedback provided'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            
 
             {/* Round 2 Evaluation Section */}
             <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
@@ -576,13 +554,13 @@ export default function EvaluatorDashboard() {
 
               <div className="mb-4 mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Round 2 Evaluator Marks (0-80)
+                  Evaluation Marks (0-10)
                 </label>
 
                 <input
                   type="number"
                   min="0"
-                  max="80"
+                  max="10"
                   value={rnd2marks}
                   onChange={e => {
                     const value = e.target.value;
@@ -593,7 +571,7 @@ export default function EvaluatorDashboard() {
                         round2: { ...teamData.round2, marks: '' }
                       });
                     } else {
-                      const num = Math.max(0, Math.min(80, Number(value)));
+                      const num = Math.max(0, Math.min(10, Number(value)));
                       setRnd2Marks(num.toString());
                       setTeamData({
                         ...teamData,
@@ -603,7 +581,7 @@ export default function EvaluatorDashboard() {
                   }}
                   
                   className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter marks (0-80)"
+                  placeholder="Enter marks (0-10)"
                   required
                 />
               </div>
@@ -657,20 +635,7 @@ export default function EvaluatorDashboard() {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Round 2 Feedback <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="round2.feedback"
-                  value={teamData.round2?.feedback || ''}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Provide feedback for the team's round 2 performance..."
-                  required
-                ></textarea>
-              </div>
+              
             </div>
 
             {successMessage && (

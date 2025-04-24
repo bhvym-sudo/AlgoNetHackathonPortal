@@ -180,21 +180,12 @@ export default function EvaluatorDashboard() {
     if (!teamData) return;
 
     // Validate at least 3 problems selected
-    if (selectedProblems.length < 3) {
-      setErrorMessage("Please select at least 3 problems.");
+    if (selectedProblems.length < 1) {
+      setErrorMessage("Please select at least 1 problems.");
       return;
     }
     
     // Validate required fields
-    if (!teamData.round1?.marks) {
-      setErrorMessage("Please enter marks");
-      return;
-    }
-    
-    if (!teamData.round1?.feedback?.trim()) {
-      setErrorMessage("Please enter feedback");
-      return;
-    }
     
     setIsSubmitting(true);
     setErrorMessage('');
@@ -525,7 +516,7 @@ export default function EvaluatorDashboard() {
             
             {/* Problem Selection Section */}
             <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 3)</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Select Problems (min 1)</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {problems.map((problem, idx) => {
                   // Check if this problem's text is in selectedProblems
@@ -559,45 +550,14 @@ export default function EvaluatorDashboard() {
                   }
                 </div>
               )}
-              {(selectedProblems || []).length < 3 && (
+              {(selectedProblems || []).length < 1 && (
                 <div className="mt-1 text-sm text-amber-600">
-                  Please select at least 3 problems
+                  Please select at least 1 problems
                 </div>
               )}
             </div>
 
-            {/* Evaluation Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-3 text-gray-800">Evaluation</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marks (0-20) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="marks"
-                  value={teamData.round1?.marks || ''}
-                  onChange={handleInputChange}
-                  min="0"
-                  max="20"
-                  required
-                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Feedback <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="feedback"
-                  value={teamData.round1?.feedback || ''}
-                  onChange={handleInputChange}
-                  rows="4"
-                  required
-                  className="w-full p-2 border border-gray-300 rounded text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                ></textarea>
-              </div>
-            </div>
+            
 
             <div className="flex justify-end">
               <button
