@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function StudentDashboard() {
   const [teamId, setTeamId] = useState('');
@@ -23,26 +23,12 @@ export default function StudentDashboard() {
     submittedAt: null
   });
   const [problemStatements, setProblemStatements] = useState([]);
-  const [selectedProblems, setSelectedProblems] = useState([]);
   const [teamLoaded, setTeamLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Add state for current team member
   const [currentMember, setCurrentMember] = useState('');
-
-  // Load selected problems from teamData when loaded
-  useEffect(() => {
-    if (teamLoaded && problemStatements.length > 0) {
-      const selected = [];
-      for (let i = 1; i <= 12; i++) {
-        const key = `prblm${i}`;
-        if (teamData[key]) {
-          selected.push({ key, text: teamData[key] });
-        }
-      }
-      setSelectedProblems(selected);
-    }
-  }, [teamLoaded, problemStatements, teamData]);
 
   const memberExists = (name, enrollment) => {
     return name?.trim() !== '' && enrollment?.trim() !== '';
@@ -67,7 +53,7 @@ export default function StudentDashboard() {
 
   const loadProblemStatements = async () => {
     try {
-      const res = await fetch('/mca/api/problems');
+      const res = await fetch('/api/problems');
       const data = await res.json();
       if (data?.problemStatements) {
         setProblemStatements(data.problemStatements);
@@ -88,8 +74,7 @@ export default function StudentDashboard() {
     setSuccessMessage('');
     
     try {
-      // Change to absolute path for mca team API
-      const res = await fetch(`/mca/api/team?teamId=${teamId}`);
+      const res = await fetch(`/api/team?teamId=${teamId}`);
       const data = await res.json();
       
       if (data?.teamId) {
@@ -108,6 +93,7 @@ export default function StudentDashboard() {
         setTeamData(updatedData);
         setTeamLoaded(true);
         loadProblemStatements();
+        // Reset current member selection when loading team
         setCurrentMember('');
       } else {
         setErrorMessage("Please enter correct team ID");
@@ -130,61 +116,32 @@ export default function StudentDashboard() {
     }));
   };
 
-  const handleProblemCheckbox = (key, text) => {
-    if (teamData.submitted) return;
-    setSelectedProblems(prev => {
-      if (prev.find(p => p.key === key)) {
-        return prev.filter(p => p.key !== key);
-      } else {
-        return [...prev, { key, text }];
-      }
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-
-    if (selectedProblems.length < 1) {
-      setErrorMessage("Please select at least 1 problems.");
+    // Validate that a team member is selected
+    if (!currentMember) {
+      setErrorMessage("Please select which team member you are");
       return;
     }
-  
+    
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
   
-    // --- Always send all prblm1 ... prblm12 fields, clearing unchecked ones ---
-    const problemsForBackend = {};
-    if (selectedProblems && Array.isArray(selectedProblems)) {
-      selectedProblems.forEach((p, idx) => {
-        problemsForBackend[`prblm${idx + 1}`] = p.text;
-      });
-      for (let i = selectedProblems.length + 1; i <= 12; i++) {
-        problemsForBackend[`prblm${i}`] = '';
-      }
-    } else {
-      for (let i = 1; i <= 12; i++) {
-        problemsForBackend[`prblm${i}`] = '';
-      }
-    }
-    // --- End mapping block ---
-  
     try {
-      const res = await fetch('/mca/api/team', {
+      const res = await fetch('/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...teamData,
-          ...problemsForBackend, // <-- Always send all prblm fields
           teamId,
           submitted: true,
           submittedBy: currentMember,
           submittedAt: new Date().toISOString(),
-          currentMember,
-          selectedProblems // <-- send selected problems
+          currentMember // Send the current member for attendance tracking
         }),
       });
   
@@ -195,8 +152,6 @@ export default function StudentDashboard() {
       } else {
         setSuccessMessage("Team registration submitted successfully!");
         setTeamData(result.team || teamData);
-        alert("Form submitted, proceed to your respective room for evaluation");
-        window.location.reload();
       }
     } catch (err) {
       console.error("Submission failed:", err);
@@ -231,7 +186,6 @@ export default function StudentDashboard() {
     setErrorMessage('');
     setSuccessMessage('');
     setCurrentMember('');
-    setSelectedProblems([]);
   };
 
   // Helper function to get member options for dropdown
@@ -271,7 +225,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center text-black">AlgoNet Hackathon - MCA round 1 Student Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center text-white">AlgoNet Hackathon - Student Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         {!teamLoaded ? (
@@ -306,7 +260,7 @@ export default function StudentDashboard() {
             </div>
             <div className="mt-2 text-center">
               <a 
-                href="mca/newteam" 
+                href="/newteam" 
                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
               >
                 New Team Registration
@@ -318,7 +272,7 @@ export default function StudentDashboard() {
           <form onSubmit={handleSubmit}>
             {teamData.submitted && (
               <div className="p-4 mb-4 bg-yellow-100 border border-yellow-400 text-black rounded">
-                <p className="font-medium">This team {teamId} has already submitted their registration.</p>
+                <p className="font-medium">This team has already submitted their registration.</p>
                 {teamData.submittedBy && teamData.submittedAt && (
                   <p className="text-sm mt-1">
                     Submitted by: <span className="font-medium">{teamData.submittedBy}</span> on{" "}
@@ -349,9 +303,7 @@ export default function StudentDashboard() {
 
             {/* Member Selection - Only show if not submitted */}
             {!teamData.submitted && (
-              
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-                <h1 className='block text-black font-medium mb-2'>Submitting form for team id: {teamId}</h1>
                 <label className="block text-black font-medium mb-2">
                   Select who you are
                 </label>
@@ -527,29 +479,22 @@ export default function StudentDashboard() {
               </div>
             )}
 
-            {/* Problem Statement Section */}
-            {teamLoaded && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-3 text-black">Select Your Problems (min 1)</h2>
-                <div className="grid grid-cols-3 gap-4">
-                  {problemStatements.map((prblm, idx) => (
-                    <label key={prblm.key} className="flex items-center space-x-2 bg-gray-50 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedProblems.find(p => p.key === prblm.key)}
-                        disabled={teamData.submitted}
-                        onChange={() => handleProblemCheckbox(prblm.key, prblm.text)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-900 rounded"
-                      />
-                      <span className="text-black">{prblm.text}</span>
-                    </label>
+            {/* Problem Statement */}
+            {!teamData.submitted && (
+              <div className="mb-6">
+                <label className="block text-black font-medium mb-2">Problem Statement</label>
+                <select
+                  name="problemStatement"
+                  value={teamData.problemStatement}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-900 rounded text-black"
+                  required
+                >
+                  <option value="">Select a problem statement</option>
+                  {problemStatements.map((ps, index) => (
+                    <option key={index} value={ps.title}>{ps.title}</option>
                   ))}
-                </div>
-                {teamData.submitted && selectedProblems.length > 0 && (
-                  <div className="mt-2 text-green-700 font-medium">
-                    Problems selected: {selectedProblems.map(p => p.text).join(', ')}
-                  </div>
-                )}
+                </select>
               </div>
             )}
 
@@ -571,7 +516,7 @@ export default function StudentDashboard() {
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700"
-                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !currentMember}
+                  disabled={isLoading || !teamData.leaderName || !teamData.leaderEnrollment || !teamData.problemStatement || !currentMember}
                 >
                   {isLoading ? "Submitting..." : "Submit Registration"}
                 </button>
