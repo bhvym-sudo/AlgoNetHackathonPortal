@@ -1,6 +1,6 @@
 export default function EvaluatorDashboardLayout({ children }) {
   return (
-    <div className="bg-black-100 min-h-screen">
+    <div className="bg-white min-h-screen">
       <header className="bg-blue-800 text-white p-4 shadow-md">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-xl font-bold">AlgoNet Round 2 Hackathon - Evaluator Portal</h1>
