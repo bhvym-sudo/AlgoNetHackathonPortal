@@ -396,6 +396,7 @@ export default function RoundTwoHackathon() {
                       checked={member2Present2}
                       onChange={(e) => setMember2Present2(e.target.checked)}
                       className="h-5 w-5 text-blue-600 border-gray-300 rounded mr-2"
+                      
                     />
                     <label htmlFor="member2Present2" className="text-sm font-medium text-gray-700">
                       Present (Round 2)

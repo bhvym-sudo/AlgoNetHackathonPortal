@@ -11,7 +11,7 @@ export default function EvaluatorDashboard() {
   const [teamFiles, setTeamFiles] = useState([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
-  // Define rnd2atteval state
+
   const [rnd2atteval, setRnd2Atteval] = useState({
     leader: false,
     member2: false,
@@ -19,11 +19,11 @@ export default function EvaluatorDashboard() {
     member4: false,
   });
 
-  // Define rnd2marks state
+
   const [rnd2marks, setRnd2Marks] = useState('');
   const [problems, setProblems] = useState([]);
             
-            // Add this useEffect hook after state declarations (before loadTeamData)
+
             useEffect(() => {
               const loadProblems = async () => {
                 try {
@@ -46,7 +46,7 @@ export default function EvaluatorDashboard() {
     setErrorMessage('');
     setSuccessMessage('');
     
-    // In loadTeamData function, add marks initialization:
+
     try {
       const res = await fetch(`/api/team?teamId=${teamId}`);
       const data = await res.json();
@@ -58,7 +58,7 @@ export default function EvaluatorDashboard() {
         setTeamData(data);
         setRnd2Marks(data.round2.marks?.toString() || ''); // Add this line
         
-        // Initialize rnd2atteval after setting team data
+
         if (data.rnd2atteval) {
           setRnd2Atteval(data.rnd2atteval);
         } else {
@@ -102,11 +102,11 @@ export default function EvaluatorDashboard() {
     }
   };
 
-  // Update handleInputChange - remove marks handling:
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Remove the 'round2.marks' condition entirely
+
     if (name === 'round2.feedback') {
       setTeamData({
         ...teamData,
@@ -133,7 +133,7 @@ export default function EvaluatorDashboard() {
       validationMessage = 'Please enter a problem statement';
     }
     
-    // Fix: Check rnd2marks state instead of teamData.round2.marks
+
     if (!rnd2marks || isNaN(Number(rnd2marks))) {
       isValid = false;
       validationMessage = validationMessage || 'Please enter valid marks for Round 2';
@@ -310,7 +310,7 @@ export default function EvaluatorDashboard() {
               </div>
             </div>
             
-            // Team Leader Section
+
             <div className="mb-6 p-4 bg-gray-50 rounded">
               <h3 className="font-medium mb-3 text-gray-800">Team Leader</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,7 +342,7 @@ export default function EvaluatorDashboard() {
                 
         
                 
-                // In team leader checkbox section, remove required attribute:
+
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -419,7 +419,7 @@ export default function EvaluatorDashboard() {
                       {teamData.member3Enrollment || ''}
                     </label>
                   </div>
-                  // In member3 checkbox section, update to use rnd2atteval:
+
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -458,7 +458,7 @@ export default function EvaluatorDashboard() {
                       {teamData.member4Enrollment || ''}
                     </label>
                   </div>
-                  // In member4 checkbox section, update to use rnd2atteval:
+
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -480,10 +480,10 @@ export default function EvaluatorDashboard() {
             {/* Problem Statement */}
            
             
-            // Move these to the state declarations section (with other states)
+
             
             
-            // In the JSX, keep only the dropdown component:
+
             <div className="mb-6">
               <label className="block text-gray-700 font-medium mb-2">
                 Problem Statement <span className="text-red-500">*</span>
@@ -529,7 +529,7 @@ export default function EvaluatorDashboard() {
             <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
               <h3 className="font-medium mb-3 text-gray-800">Round 2 Evaluator Attendance</h3>
               
-              // In the Round 2 marks input section:
+
               <div className="mb-4 mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Round 2 Evaluator Marks (0-80)
