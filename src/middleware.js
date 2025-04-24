@@ -49,15 +49,19 @@ export function middleware(request) {
     }
   }
 
-  if (pathname === '/' && toggles.studentRound1 === false) {
+  if (pathname === '/mca' && toggles.studentRound1 === false) {
     return NextResponse.redirect(new URL('/disabled', request.url));
   }
 
-  if (pathname.startsWith('/roundtwohackathon/Student') && toggles.studentRound2 === false) {
+  if (pathname.startsWith('/mca/evaluator/dashboard') && toggles.evaluatorRound1 == false){
+    return NextResponse.redirect(new URL('/disabled', request.url))
+  }
+
+  if (pathname.startsWith('/mca/roundtwohackathon/Student') && toggles.studentRound2 === false) {
     return NextResponse.redirect(new URL('/disabled', request.url));
   }
 
-  if (pathname.startsWith('/roundtwohackathon/Evaluator') && toggles.evaluatorRound2 === false) {
+  if (pathname.startsWith('/mca/roundtwohackathon/Evaluator') && toggles.evaluatorRound2 === false) {
     return NextResponse.redirect(new URL('/disabled', request.url));
   }
 
