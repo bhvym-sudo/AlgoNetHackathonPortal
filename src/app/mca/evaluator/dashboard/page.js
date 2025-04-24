@@ -287,7 +287,7 @@ export default function EvaluatorDashboard() {
   
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center text-black">AlgoNet Hackathon - MCA round 1 Evaluator Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center text-blue-500">AlgoNet Hackathon - MCA round 1 Evaluator Dashboard</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-6">

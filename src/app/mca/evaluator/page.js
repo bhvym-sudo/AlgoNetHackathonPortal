@@ -59,7 +59,7 @@ export default function EvaluatorLogin() {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-10 text-center">AlgoNet Hackathon - Evaluator Login</h1>
+      <h1 className="text-3xl font-bold mb-10 text-center text-blue-500">AlgoNet Hackathon - Evaluator Login</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
         <form onSubmit={handleSubmit}>
